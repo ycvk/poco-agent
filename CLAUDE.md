@@ -192,6 +192,23 @@ Use Tailwind CSS v4 utility classes with CSS variables. All colors, shadows, and
 
 **DO NOT** hardcode colors like `#ffffff` or write raw CSS without using these variables.
 
+### Frontend Internationalization (i18n)
+
+All user-facing text MUST use i18n translations, NOT hardcoded strings:
+
+```tsx
+import { useT } from "@/app/i18n/client";
+const { t } = useT();
+
+// ✅ Correct
+<Button>{t("sidebar.newTask")}</Button>
+
+// ❌ Wrong
+<Button>New Task</Button>
+```
+
+Translation files: `app/i18n/locales/{lng}/translation.json` | Config: `app/i18n/settings.ts`
+
 ## Linting and Formatting
 
 **Python:**
