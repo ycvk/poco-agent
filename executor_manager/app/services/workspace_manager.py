@@ -1,5 +1,6 @@
 import json
 import logging
+import mimetypes
 import shutil
 import tarfile
 from dataclasses import dataclass, asdict
@@ -43,6 +44,23 @@ class WorkspaceManager:
 
         self._init_directories()
 
+        self._ignore_names = {
+            ".git",
+            ".hg",
+            ".svn",
+            ".DS_Store",
+            "__pycache__",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            "node_modules",
+            ".venv",
+            "venv",
+            ".next",
+            "dist",
+            "build",
+        }
+
     def _init_directories(self) -> None:
         """Initialize directory structure."""
         for directory in [self.active_dir, self.archive_dir, self.temp_dir]:
@@ -69,6 +87,123 @@ class WorkspaceManager:
             self._write_meta(session_dir, user_id, session_id)
 
         return session_dir
+
+    def get_session_workspace_dir(self, user_id: str, session_id: str) -> Path | None:
+        """Get the workspace directory for a session without creating it."""
+        session_dir = self.get_workspace_path(
+            user_id=user_id,
+            session_id=session_id,
+            create=False,
+        )
+        workspace_dir = session_dir / "workspace"
+        if not workspace_dir.exists():
+            return None
+        return workspace_dir
+
+    def list_workspace_files(
+        self,
+        user_id: str,
+        session_id: str,
+        *,
+        max_depth: int = 8,
+        max_entries: int = 4000,
+    ) -> list[dict]:
+        """List workspace files as a tree structure."""
+        workspace_dir = self.get_session_workspace_dir(
+            user_id=user_id, session_id=session_id
+        )
+        if not workspace_dir:
+            return []
+
+        counter = {"count": 0}
+        base = workspace_dir.resolve()
+
+        def build_dir(current: Path, prefix: str, depth: int) -> list[dict]:
+            if depth > max_depth:
+                return []
+
+            nodes: list[dict] = []
+            try:
+                entries = sorted(
+                    current.iterdir(),
+                    key=lambda p: (
+                        1 if p.is_file() else 0,
+                        p.name.lower(),
+                    ),
+                )
+            except Exception:
+                return []
+
+            for entry in entries:
+                if counter["count"] >= max_entries:
+                    break
+
+                if entry.name in self._ignore_names:
+                    continue
+
+                if entry.is_symlink():
+                    continue
+
+                rel_path = f"{prefix}/{entry.name}" if prefix else f"/{entry.name}"
+                counter["count"] += 1
+
+                if entry.is_dir():
+                    children = build_dir(entry, rel_path, depth + 1)
+                    nodes.append(
+                        {
+                            "id": rel_path,
+                            "name": entry.name,
+                            "type": "folder",
+                            "path": rel_path,
+                            "children": children,
+                        }
+                    )
+                elif entry.is_file():
+                    mime_type, _ = mimetypes.guess_type(entry.name)
+                    nodes.append(
+                        {
+                            "id": rel_path,
+                            "name": entry.name,
+                            "type": "file",
+                            "path": rel_path,
+                            "mimeType": mime_type,
+                        }
+                    )
+
+            return nodes
+
+        return build_dir(base, "", 0)
+
+    def resolve_workspace_file(
+        self,
+        user_id: str,
+        session_id: str,
+        file_path: str,
+    ) -> Path | None:
+        """Resolve a file path within a workspace safely."""
+        workspace_dir = self.get_session_workspace_dir(
+            user_id=user_id, session_id=session_id
+        )
+        if not workspace_dir:
+            return None
+
+        clean = (file_path or "").strip()
+        if not clean:
+            return None
+
+        clean = clean.lstrip("/")
+        candidate = (workspace_dir / clean).resolve()
+        base = workspace_dir.resolve()
+
+        try:
+            candidate.relative_to(base)
+        except Exception:
+            return None
+
+        if not candidate.exists() or not candidate.is_file():
+            return None
+
+        return candidate
 
     def _write_meta(
         self,

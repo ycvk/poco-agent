@@ -84,7 +84,7 @@ class Settings(BaseSettings):
         default="/var/lib/opencowork/workspaces", alias="WORKSPACE_ROOT"
     )
     workspace_cleanup_enabled: bool = Field(
-        default=True, alias="WORKSPACE_CLEANUP_ENABLED"
+        default=False, alias="WORKSPACE_CLEANUP_ENABLED"
     )
     workspace_cleanup_interval_hours: int = Field(
         default=24, alias="WORKSPACE_CLEANUP_INTERVAL_HOURS"
