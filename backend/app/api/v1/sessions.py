@@ -1,22 +1,18 @@
 import uuid
-import json
-from urllib.error import HTTPError, URLError
-from urllib.parse import quote
-from urllib.request import Request, urlopen
 
-from fastapi import APIRouter, Depends, Query, Request as FastAPIRequest
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_id, get_db
 from app.core.errors.error_codes import ErrorCode
 from app.core.errors.exceptions import AppException
-from app.core.settings import get_settings
 from app.schemas.message import MessageResponse
 from app.schemas.response import Response, ResponseSchema
 from app.schemas.session import (
     SessionCreateRequest,
     SessionResponse,
+    SessionStateResponse,
     SessionWithTitleResponse,
     SessionUpdateRequest,
 )
@@ -25,9 +21,15 @@ from app.schemas.usage import UsageResponse
 from app.schemas.workspace import FileNode
 from app.services.message_service import MessageService
 from app.services.session_service import SessionService
+from app.services.storage_service import S3StorageService
 from app.services.tool_execution_service import ToolExecutionService
 from app.services.usage_service import UsageService
 from app.utils.workspace import build_workspace_file_nodes
+from app.utils.workspace_manifest import (
+    build_nodes_from_manifest,
+    extract_manifest_files,
+    normalize_manifest_path,
+)
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -35,6 +37,7 @@ session_service = SessionService()
 message_service = MessageService()
 tool_execution_service = ToolExecutionService()
 usage_service = UsageService()
+storage_service = S3StorageService()
 
 
 @router.post("", response_model=ResponseSchema[SessionResponse])
@@ -117,6 +120,25 @@ async def get_session(
     return Response.success(
         data=SessionResponse.model_validate(db_session),
         message="Session retrieved successfully",
+    )
+
+
+@router.get("/{session_id}/state", response_model=ResponseSchema[SessionStateResponse])
+async def get_session_state(
+    session_id: uuid.UUID,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Gets session state details."""
+    db_session = session_service.get_session(db, session_id)
+    if db_session.user_id != user_id:
+        raise AppException(
+            error_code=ErrorCode.FORBIDDEN,
+            message="Session does not belong to the user",
+        )
+    return Response.success(
+        data=SessionStateResponse.model_validate(db_session),
+        message="Session state retrieved successfully",
     )
 
 
@@ -215,75 +237,52 @@ async def get_session_usage(
 )
 async def get_session_workspace_files(
     session_id: uuid.UUID,
-    request: FastAPIRequest,
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
-    """List workspace files for a session (proxy to Executor Manager)."""
+    """List workspace files for a session (served via OSS manifest)."""
     db_session = session_service.get_session(db, session_id)
     if db_session.user_id != user_id:
         raise AppException(
             error_code=ErrorCode.FORBIDDEN,
             message="Session does not belong to the user",
         )
-    settings = get_settings()
+    if not db_session.workspace_manifest_key:
+        return Response.success(data=[], message="Workspace export not ready")
 
-    url = f"{settings.executor_manager_url}/api/v1/workspace/files/{db_session.user_id}/{session_id}"
+    manifest = storage_service.get_manifest(db_session.workspace_manifest_key)
+    raw_nodes = build_nodes_from_manifest(manifest)
+    manifest_files = extract_manifest_files(manifest)
+    prefix = (db_session.workspace_files_prefix or "").rstrip("/")
+    file_url_map: dict[str, str] = {}
 
-    try:
-        em_request = Request(url, headers={"accept": "application/json"})
-        with urlopen(em_request, timeout=5) as resp:  # noqa: S310
-            payload = json.loads(resp.read().decode("utf-8"))
-        data = payload.get("data", payload) if isinstance(payload, dict) else payload
-        raw_nodes = data if isinstance(data, list) else []
-    except HTTPError as e:
-        raise AppException(
-            error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
-            message=f"Executor Manager workspace request failed: {e.code}",
-        ) from e
-    except URLError as e:
-        raise AppException(
-            error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
-            message=f"Executor Manager unavailable: {e.reason}",
-        ) from e
-    except Exception as e:
-        raise AppException(
-            error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
-            message=f"Failed to fetch workspace files from Executor Manager: {e}",
-        ) from e
+    for file_entry in manifest_files:
+        file_path = normalize_manifest_path(file_entry.get("path"))
+        if not file_path:
+            continue
+        object_key = (
+            file_entry.get("key")
+            or file_entry.get("object_key")
+            or file_entry.get("oss_key")
+            or file_entry.get("s3_key")
+        )
+        if not object_key and prefix:
+            object_key = f"{prefix}/{file_path.lstrip('/')}"
+        if not object_key:
+            continue
+        mime_type = file_entry.get("mimeType") or file_entry.get("mime_type")
+        file_url_map[file_path] = storage_service.presign_get(
+            object_key,
+            response_content_disposition="inline",
+            response_content_type=mime_type,
+        )
 
-    api_base = str(request.base_url).rstrip("/")
-
-    def build_file_url(file_path: str) -> str:
-        encoded = quote(file_path, safe="")
-        return f"{api_base}/api/v1/sessions/{session_id}/workspace/file?path={encoded}"
+    def build_file_url(file_path: str) -> str | None:
+        normalized = normalize_manifest_path(file_path) or file_path
+        return file_url_map.get(normalized)
 
     nodes = build_workspace_file_nodes(
         raw_nodes,
         file_url_builder=build_file_url,
     )
     return Response.success(data=nodes, message="Workspace files retrieved")
-
-
-@router.get("/{session_id}/workspace/file")
-async def get_session_workspace_file(
-    session_id: uuid.UUID,
-    path: str = Query(..., description="File path within the session workspace"),
-    user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db),
-) -> RedirectResponse:
-    """Redirect to Executor Manager file endpoint for preview/download."""
-    db_session = session_service.get_session(db, session_id)
-    if db_session.user_id != user_id:
-        raise AppException(
-            error_code=ErrorCode.FORBIDDEN,
-            message="Session does not belong to the user",
-        )
-    settings = get_settings()
-
-    encoded = quote(path, safe="")
-    target = (
-        f"{settings.executor_manager_url}/api/v1/workspace/file/{db_session.user_id}/{session_id}"
-        f"?path={encoded}"
-    )
-    return RedirectResponse(url=target, status_code=307)

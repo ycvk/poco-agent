@@ -3,6 +3,7 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.callback import AgentCurrentState
 
 
 class TaskConfig(BaseModel):
@@ -26,6 +27,11 @@ class SessionUpdateRequest(BaseModel):
     status: str | None = None
     sdk_session_id: str | None = None
     workspace_archive_url: str | None = None
+    state_patch: dict[str, Any] | None = None
+    workspace_files_prefix: str | None = None
+    workspace_manifest_key: str | None = None
+    workspace_archive_key: str | None = None
+    workspace_export_status: str | None = None
 
 
 class SessionResponse(BaseModel):
@@ -36,6 +42,8 @@ class SessionResponse(BaseModel):
     sdk_session_id: str | None
     config_snapshot: dict[str, Any] | None
     workspace_archive_url: str | None
+    state_patch: AgentCurrentState | None = None
+    workspace_export_status: str | None = None
     status: str
     created_at: datetime
     updated_at: datetime
@@ -54,9 +62,23 @@ class SessionWithTitleResponse(BaseModel):
     sdk_session_id: str | None
     config_snapshot: dict[str, Any] | None
     workspace_archive_url: str | None
+    state_patch: AgentCurrentState | None = None
+    workspace_export_status: str | None = None
     status: str
     created_at: datetime
     updated_at: datetime
     title: str | None = None
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class SessionStateResponse(BaseModel):
+    """Session state response."""
+
+    session_id: UUID = Field(validation_alias="id")
+    status: str
+    state_patch: AgentCurrentState | None = None
+    workspace_export_status: str | None = None
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

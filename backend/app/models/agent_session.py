@@ -24,6 +24,13 @@ class AgentSession(Base, TimestampMixin):
     sdk_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     config_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     workspace_archive_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    state_patch: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    workspace_files_prefix: Mapped[str | None] = mapped_column(Text, nullable=True)
+    workspace_manifest_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    workspace_archive_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    workspace_export_status: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )
     status: Mapped[str] = mapped_column(String(50), default="running", nullable=False)
 
     messages: Mapped[list["AgentMessage"]] = relationship(

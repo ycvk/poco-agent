@@ -9,7 +9,7 @@ from app.schemas.workspace import FileNode
 def build_workspace_file_nodes(
     nodes: list[dict[str, Any]],
     *,
-    file_url_builder: Callable[[str], str] | None = None,
+    file_url_builder: Callable[[str], str | None] | None = None,
 ) -> list[FileNode]:
     """Normalize raw workspace file nodes and optionally attach preview URLs.
 
@@ -27,7 +27,9 @@ def build_workspace_file_nodes(
         node_path = node.get("path")
         node_id = node.get("id") or node_path or ""
         name = node.get("name") or ""
-        mime_type = node.get("mimeType")
+        mime_type = node.get("mimeType") or node.get("mime_type")
+        oss_status = node.get("oss_status") or node.get("ossStatus")
+        oss_meta = node.get("oss_meta") or node.get("ossMeta")
 
         children_raw = node.get("children")
         children = (
@@ -57,6 +59,8 @@ def build_workspace_file_nodes(
                 children=children,
                 url=url,
                 mimeType=mime_type,
+                oss_status=oss_status,
+                oss_meta=oss_meta,
             )
         )
 

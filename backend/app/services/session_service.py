@@ -59,6 +59,16 @@ class SessionService:
             db_session.sdk_session_id = request.sdk_session_id
         if request.workspace_archive_url is not None:
             db_session.workspace_archive_url = request.workspace_archive_url
+        if request.state_patch is not None:
+            db_session.state_patch = request.state_patch
+        if request.workspace_files_prefix is not None:
+            db_session.workspace_files_prefix = request.workspace_files_prefix
+        if request.workspace_manifest_key is not None:
+            db_session.workspace_manifest_key = request.workspace_manifest_key
+        if request.workspace_archive_key is not None:
+            db_session.workspace_archive_key = request.workspace_archive_key
+        if request.workspace_export_status is not None:
+            db_session.workspace_export_status = request.workspace_export_status
 
         db.commit()
         db.refresh(db_session)

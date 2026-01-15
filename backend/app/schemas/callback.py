@@ -34,7 +34,7 @@ class FileChange(BaseModel):
     """File change record."""
 
     path: str
-    status: str
+    status: str  # "added" | "modified" | "staged" | "deleted" | "renamed"
     added_lines: int = 0
     deleted_lines: int = 0
     diff: str | None = None
@@ -71,6 +71,10 @@ class AgentCallbackRequest(BaseModel):
     new_message: Any | None = None
     state_patch: AgentCurrentState | None = None
     sdk_session_id: str | None = None
+    workspace_files_prefix: str | None = None
+    workspace_manifest_key: str | None = None
+    workspace_archive_key: str | None = None
+    workspace_export_status: str | None = None
 
 
 class CallbackResponse(BaseModel):

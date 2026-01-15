@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -13,3 +13,5 @@ class FileNode(BaseModel):
     children: list["FileNode"] | None = None
     url: str | None = None
     mimeType: str | None = None
+    oss_status: str | None = None
+    oss_meta: dict[str, Any] | None = None

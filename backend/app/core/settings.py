@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     executor_manager_url: str = Field(
         default="http://localhost:8001", alias="EXECUTOR_MANAGER_URL"
     )
+    s3_endpoint: str | None = Field(default=None, alias="S3_ENDPOINT")
+    s3_access_key: str | None = Field(default=None, alias="S3_ACCESS_KEY")
+    s3_secret_key: str | None = Field(default=None, alias="S3_SECRET_KEY")
+    s3_region: str = Field(default="us-east-1", alias="S3_REGION")
+    s3_bucket: str | None = Field(default=None, alias="S3_BUCKET")
+    s3_force_path_style: bool = Field(default=True, alias="S3_FORCE_PATH_STYLE")
+    s3_presign_expires: int = Field(default=300, alias="S3_PRESIGN_EXPIRES")
 
     model_config = SettingsConfigDict(
         env_file=".env",

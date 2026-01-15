@@ -246,28 +246,42 @@ class CallbackService:
                 callback.new_message
             )
 
-        # Save SDK session_id if present
+        update_data: dict[str, Any] = {}
+
         if (
             derived_sdk_session_id
             and derived_sdk_session_id != db_session.sdk_session_id
         ):
-            session_service.update_session(
-                db,
-                db_session.id,
-                SessionUpdateRequest(sdk_session_id=derived_sdk_session_id),
-            )
-            logger.info(
-                f"Updated session {db_session.id} with sdk_session_id={derived_sdk_session_id}"
-            )
+            update_data["sdk_session_id"] = derived_sdk_session_id
 
         if callback.status in [CallbackStatus.COMPLETED, CallbackStatus.FAILED]:
-            session_service.update_session(
-                db, db_session.id, SessionUpdateRequest(status=callback.status.value)
+            update_data["status"] = callback.status.value
+
+        if callback.state_patch is not None:
+            update_data["state_patch"] = callback.state_patch.model_dump(mode="json")
+
+        if callback.workspace_files_prefix is not None:
+            update_data["workspace_files_prefix"] = callback.workspace_files_prefix
+        if callback.workspace_manifest_key is not None:
+            update_data["workspace_manifest_key"] = callback.workspace_manifest_key
+        if callback.workspace_archive_key is not None:
+            update_data["workspace_archive_key"] = callback.workspace_archive_key
+        if callback.workspace_export_status is not None:
+            update_data["workspace_export_status"] = callback.workspace_export_status
+
+        if update_data:
+            db_session = session_service.update_session(
+                db, db_session.id, SessionUpdateRequest(**update_data)
             )
-            logger.info(
-                f"Updated session {db_session.id} status to {callback.status.value} "
-                f"via callback from {callback.session_id}"
-            )
+            if "sdk_session_id" in update_data:
+                logger.info(
+                    f"Updated session {db_session.id} with sdk_session_id={derived_sdk_session_id}"
+                )
+            if "status" in update_data:
+                logger.info(
+                    f"Updated session {db_session.id} status to {callback.status.value} "
+                    f"via callback from {callback.session_id}"
+                )
 
         if callback.new_message:
             self._persist_message_and_tools(db, db_session.id, callback.new_message)
@@ -297,8 +311,6 @@ class CallbackService:
                     db_run.progress = 100
 
             db.commit()
-
-        # TODO: Persist state_patch
 
         return CallbackResponse(
             session_id=str(db_session.id),
