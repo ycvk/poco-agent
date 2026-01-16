@@ -9,6 +9,8 @@ from app.core.settings import get_settings
 from app.scheduler.task_dispatcher import TaskDispatcher
 from app.services.backend_client import BackendClient
 from app.services.executor_client import ExecutorClient
+from app.services.config_resolver import ConfigResolver
+from app.services.skill_stager import SkillStager
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,8 @@ class RunPullService:
         self.backend_client = BackendClient()
         self.executor_client = ExecutorClient()
         self.container_pool = TaskDispatcher.get_container_pool()
+        self.config_resolver = ConfigResolver(self.backend_client)
+        self.skill_stager = SkillStager()
 
         self.worker_id = f"{socket.gethostname()}:{os.getpid()}"
         self._semaphore = asyncio.Semaphore(self.settings.max_concurrent_tasks)
@@ -171,6 +175,14 @@ class RunPullService:
         callback_url = f"{self.settings.callback_base_url}/api/v1/callback"
 
         try:
+            resolved_config = await self.config_resolver.resolve(config_snapshot)
+            staged_skills = self.skill_stager.stage_skills(
+                user_id=user_id,
+                session_id=session_id,
+                skills=resolved_config.get("skill_files") or {},
+            )
+            resolved_config["skill_files"] = staged_skills
+
             executor_url, _ = await self.container_pool.get_or_create_container(
                 session_id=session_id,
                 user_id=user_id,
@@ -184,7 +196,7 @@ class RunPullService:
                 prompt=prompt,
                 callback_url=callback_url,
                 callback_token=self.settings.callback_token,
-                config=config_snapshot,
+                config=resolved_config,
                 sdk_session_id=sdk_session_id,
             )
             try:

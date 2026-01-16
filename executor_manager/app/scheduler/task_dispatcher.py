@@ -4,6 +4,8 @@ from app.core.settings import get_settings
 from app.services.backend_client import BackendClient
 from app.services.container_pool import ContainerPool
 from app.services.executor_client import ExecutorClient
+from app.services.config_resolver import ConfigResolver
+from app.services.skill_stager import SkillStager
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,8 @@ class TaskDispatcher:
         executor_client = ExecutorClient()
         backend_client = BackendClient()
         container_pool = TaskDispatcher.get_container_pool()
+        config_resolver = ConfigResolver(backend_client)
+        skill_stager = SkillStager()
 
         user_id = config.get("user_id", "")
         container_mode = config.get("container_mode", "ephemeral")
@@ -54,6 +58,14 @@ class TaskDispatcher:
             logger.info(
                 f"Dispatching task {task_id} (session: {session_id}, mode: {container_mode})"
             )
+
+            resolved_config = await config_resolver.resolve(config or {})
+            staged_skills = skill_stager.stage_skills(
+                user_id=user_id,
+                session_id=session_id,
+                skills=resolved_config.get("skill_files") or {},
+            )
+            resolved_config["skill_files"] = staged_skills
 
             executor_url, container_id = await container_pool.get_or_create_container(
                 session_id=session_id,
@@ -70,7 +82,7 @@ class TaskDispatcher:
                 prompt=prompt,
                 callback_url=callback_url,
                 callback_token=callback_token,
-                config=config,
+                config=resolved_config,
                 sdk_session_id=sdk_session_id,
             )
 
