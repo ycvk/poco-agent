@@ -9,26 +9,26 @@ export function useUserAccount() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [credits, setCredits] = useState<UserCredits | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // // TODO: User API temporarily disabled
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     try {
+  //       const [profileData, creditsData] = await Promise.all([
+  //         getUserProfileAction(),
+  //         getUserCreditsAction(),
+  //       ]);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const [profileData, creditsData] = await Promise.all([
-          getUserProfileAction(),
-          getUserCreditsAction(),
-        ]);
+  //       setProfile(profileData);
+  //       setCredits(creditsData);
+  //     } catch (error) {
+  //       console.error("Failed to fetch user data", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
 
-        setProfile(profileData);
-        setCredits(creditsData);
-      } catch (error) {
-        console.error("Failed to fetch user data", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+  //   fetchUserData();
+  // }, []);
 
   return {
     profile,

@@ -13,6 +13,7 @@ import type {
   SessionResponse,
   TaskEnqueueRequest,
   TaskEnqueueResponse,
+  TaskConfig,
 } from "@/features/chat/types";
 
 interface MessageContentBlock {
@@ -110,16 +111,27 @@ export const chatService = {
   },
 
   enqueueTask: async (request: TaskEnqueueRequest) => {
-    return apiClient.post<TaskEnqueueResponse>(API_ENDPOINTS.tasks, request);
+    console.log("[enqueueTask] request:", JSON.stringify(request));
+    try {
+      const result = await apiClient.post<TaskEnqueueResponse>(
+        API_ENDPOINTS.sessions,
+        request,
+      );
+      console.log("[enqueueTask] result:", JSON.stringify(result));
+      return result;
+    } catch (error) {
+      console.error("[enqueueTask] error:", error);
+      throw error;
+    }
   },
 
   createSession: async (
     prompt: string,
-    userId: string = "default-user",
+    config?: TaskConfig | null,
   ): Promise<TaskEnqueueResponse> => {
     return chatService.enqueueTask({
-      user_id: userId,
       prompt,
+      config,
       schedule_mode: "immediate",
     });
   },
@@ -127,10 +139,8 @@ export const chatService = {
   sendMessage: async (
     sessionId: string,
     content: string,
-    userId: string = "default-user",
   ): Promise<TaskEnqueueResponse> => {
     return chatService.enqueueTask({
-      user_id: userId,
       prompt: content,
       session_id: sessionId,
       schedule_mode: "immediate",

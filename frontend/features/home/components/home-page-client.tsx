@@ -63,8 +63,11 @@ export function HomePageClient({
 
     try {
       // 1. Call create session API
+      console.log(inputValue);
       const session = await createSessionAction({ prompt: inputValue });
+      console.log("session", session);
       const sessionId = session.sessionId;
+      console.log("sessionId", sessionId);
 
       // 2. Save prompt to localStorage for compatibility/fallback
       localStorage.setItem(`session_prompt_${sessionId}`, inputValue);

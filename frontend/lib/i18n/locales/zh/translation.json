@@ -55,10 +55,6 @@
     "projects": {
       "newProject": "新项目"
     },
-    "taskHistory": {
-      "refactorFrontend": "帮我重构前端的代码",
-      "researchClaude": "研究一下 claude code"
-    },
     "timestamps": {
       "twoMinutesAgo": "2 分钟前",
       "oneHourAgo": "1 小时前",

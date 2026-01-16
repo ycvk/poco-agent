@@ -14,8 +14,8 @@ export const API_ENDPOINTS = {
     `/sessions/${sessionId}/workspace/files`,
   sessionWorkspaceFile: (sessionId: string, filePath: string) =>
     `/sessions/${sessionId}/workspace/file?path=${encodeURIComponent(filePath)}`,
-  tasks: "/tasks",
-  tasksHistory: "/tasks/history",
+  // tasks: "/tasks",
+  tasksHistory: "/sessions",
   runs: "/runs",
   run: (runId: string) => `/runs/${runId}`,
   runsBySession: (sessionId: string) => `/runs/session/${sessionId}`,
@@ -26,8 +26,7 @@ export const API_ENDPOINTS = {
   health: "/health",
 };
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || "";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export function getApiBaseUrl() {
   if (!API_BASE_URL) {
@@ -37,17 +36,23 @@ export function getApiBaseUrl() {
 }
 
 async function resolveAuthToken(): Promise<string | null> {
+  // TODO: 暂时跳过服务端的 cookie token 获取，后续实现认证时再启用
+  // if (typeof window === "undefined") {
+  //   try {
+  //     const { cookies } = await import("next/headers");
+  //     const cookieStore = await cookies();
+  //     return (
+  //       cookieStore.get("access_token")?.value ||
+  //       cookieStore.get("token")?.value ||
+  //       null
+  //     );
+  //   } catch {
+  //     return null;
+  //   }
+  // }
+
   if (typeof window === "undefined") {
-    try {
-      const { cookies } = await import("next/headers");
-      return (
-        cookies().get("access_token")?.value ||
-        cookies().get("token")?.value ||
-        null
-      );
-    } catch {
-      return null;
-    }
+    return null;
   }
 
   try {
@@ -79,7 +84,9 @@ export async function apiFetch<T>(
   options: ApiFetchOptions = {},
 ): Promise<T> {
   const url = `${getApiBaseUrl()}${API_PREFIX}${endpoint}`;
+  console.log("url", url);
   const headers = new Headers(options.headers);
+  console.log("headers", headers);
 
   if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
@@ -127,11 +134,23 @@ export const apiClient = {
   get: <T>(endpoint: string, options?: ApiFetchOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "GET" }),
   post: <T>(endpoint: string, body?: unknown, options?: ApiFetchOptions) =>
-    apiFetch<T>(endpoint, { ...options, method: "POST", body }),
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: "POST",
+      body: body as BodyInit | null | undefined,
+    }),
   patch: <T>(endpoint: string, body?: unknown, options?: ApiFetchOptions) =>
-    apiFetch<T>(endpoint, { ...options, method: "PATCH", body }),
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: "PATCH",
+      body: body as BodyInit | null | undefined,
+    }),
   put: <T>(endpoint: string, body?: unknown, options?: ApiFetchOptions) =>
-    apiFetch<T>(endpoint, { ...options, method: "PUT", body }),
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: "PUT",
+      body: body as BodyInit | null | undefined,
+    }),
   delete: <T>(endpoint: string, options?: ApiFetchOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "DELETE" }),
 };

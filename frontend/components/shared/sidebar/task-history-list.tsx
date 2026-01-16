@@ -112,7 +112,6 @@ function DraggableTask({
   return (
     <SidebarMenuItem
       ref={setNodeRef}
-      key={task.id}
       className={cn(
         "relative group/menu-item transition-opacity",
         isDragging && "opacity-50",

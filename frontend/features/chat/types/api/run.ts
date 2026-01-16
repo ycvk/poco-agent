@@ -4,10 +4,9 @@
 
 import type { TaskConfig } from "./session";
 
-export type { TaskConfig } from "./session";
+export type { TaskConfig, InputFile } from "./session";
 
 export interface TaskEnqueueRequest {
-  user_id: string;
   prompt: string;
   config?: TaskConfig | null;
   session_id?: string | null; // UUID, optional for continuing session

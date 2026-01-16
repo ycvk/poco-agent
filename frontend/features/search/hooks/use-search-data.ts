@@ -6,46 +6,22 @@ import type {
   SearchResultProject,
   SearchResultMessage,
 } from "@/features/search/types";
-import { listSessionsAction } from "@/features/chat/actions/query-actions";
+// import { listSessionsAction } from "@/features/chat/actions/query-actions";
 
 /**
  * Hook for fetching and aggregating search data
- * Currently uses mock data - will be replaced with API calls later
+ * TODO: Search API temporarily disabled
  */
 export function useSearchData() {
-  const [tasks, setTasks] = React.useState<SearchResultTask[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [tasks] = React.useState<SearchResultTask[]>([]);
+  const [isLoading] = React.useState(false);
+  const [error] = React.useState<Error | null>(null);
 
-  // Fetch data from API
+  // TODO: Search API temporarily disabled
   const fetchData = React.useCallback(async () => {
-    try {
-      setIsLoading(true);
-
-      const sessions = await listSessionsAction({ limit: 20 });
-
-      const realTasks: SearchResultTask[] = sessions.map((session) => ({
-        id: session.session_id,
-        title: session.session_id.slice(0, 8), // Use partial ID as title for now
-        status: session.status,
-        timestamp: session.updated_at,
-        type: "task",
-      }));
-
-      setTasks(realTasks);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to fetch search data:", err);
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
+    // API fetch disabled - return empty data
+    return;
   }, []);
-
-  // Initial data fetch
-  React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const projects = React.useMemo<SearchResultProject[]>(() => [], []);
   const messages = React.useMemo<SearchResultMessage[]>(() => [], []);
@@ -57,5 +33,6 @@ export function useSearchData() {
     isLoading,
     error,
     refetch: fetchData,
+    disabled: true, // Flag to indicate search is disabled
   };
 }

@@ -338,36 +338,41 @@ export function MainSidebar({
                 </SidebarMenuItem>
               </SidebarMenu>
 
-              {TOP_NAV_ITEMS.map(({ id, labelKey, icon: Icon, href }) => (
-                <SidebarMenu
-                  key={id}
-                  className="group-data-[collapsible=icon]:px-0"
-                >
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => {
-                        if (id === "search") {
-                          setIsSearchOpen(true);
-                        } else if (href) {
-                          router.push(href);
-                        }
-                      }}
-                      className="h-[36px] min-w-0 max-w-[calc(var(--sidebar-width)-16px)] w-full justify-start gap-3 rounded-[10px] px-3 py-[7.5px] text-muted-foreground transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:max-w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-                      tooltip={t(labelKey)}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      <span className="text-sm truncate group-data-[collapsible=icon]:hidden">
-                        {t(labelKey)}
-                      </span>
-                      {id === "search" && (
-                        <kbd className="ml-auto text-xs opacity-60 group-data-[collapsible=icon]:hidden">
-                          {searchKey}
-                        </kbd>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              ))}
+              {TOP_NAV_ITEMS.map(({ id, labelKey, icon: Icon, href }) => {
+                const isDisabled = id === "search"; // Search temporarily disabled
+                return (
+                  <SidebarMenu
+                    key={id}
+                    className="group-data-[collapsible=icon]:px-0"
+                  >
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => {
+                          if (isDisabled) return; // Disabled - do nothing
+                          if (href) {
+                            router.push(href);
+                          }
+                        }}
+                        className={cn(
+                          "h-[36px] min-w-0 max-w-[calc(var(--sidebar-width)-16px)] w-full justify-start gap-3 rounded-[10px] px-3 py-[7.5px] text-muted-foreground transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:max-w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0",
+                          isDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent",
+                        )}
+                        tooltip={isDisabled ? `${t(labelKey)} (暂不可用)` : t(labelKey)}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        <span className="text-sm truncate group-data-[collapsible=icon]:hidden">
+                          {t(labelKey)}
+                        </span>
+                        {id === "search" && (
+                          <kbd className="ml-auto text-xs opacity-60 group-data-[collapsible=icon]:hidden">
+                            {searchKey}
+                          </kbd>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                );
+              })}
             </>
           )}
 

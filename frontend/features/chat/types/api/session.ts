@@ -5,8 +5,7 @@
 import type { ApiStatePatch } from "./callback";
 
 export interface SessionCreateRequest {
-  user_id: string;
-  config?: TaskConfig | null;
+  config: TaskConfig;
 }
 
 export interface SessionUpdateRequest {
@@ -55,9 +54,20 @@ export interface UsageResponse {
   usage_json: Record<string, unknown> | null;
 }
 
+export interface InputFile {
+  id: string;
+  type: "file";
+  name: string;
+  source: string;
+  size: number;
+  content_type: string;
+  path: string;
+}
+
 export interface TaskConfig {
   repo_url?: string | null;
   git_branch?: string; // defaults to "main"
   mcp_config?: Record<string, unknown>;
   skill_files?: Record<string, unknown>;
+  input_files?: InputFile[];
 }
