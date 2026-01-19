@@ -122,6 +122,12 @@ cd frontend && pnpm dev
 
 For detailed documentation, see [CLAUDE.md](./CLAUDE.md).
 
+### Community
+
+Join our WeChat group for updates and discussion:
+
+![WeChat Group QR](assets/wx_group.jpg)
+
 ### Acknowledgments
 
 Inspired by [Anthropic's Cowork](https://claude.ai/code), an AI-powered collaboration platform for everyone.

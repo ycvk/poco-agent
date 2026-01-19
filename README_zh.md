@@ -112,6 +112,12 @@ cd frontend && pnpm dev
 
 详细文档请参阅 [CLAUDE.md](./CLAUDE.md)。
 
+## 社区交流
+
+扫码加入微信群交流：
+
+![微信群二维码](assets/wx_group.jpg)
+
 ## 致谢
 
 灵感来源于 [Anthropic's Cowork](https://claude.ai/code)——面向所有人的 AI 驱动协作平台。
