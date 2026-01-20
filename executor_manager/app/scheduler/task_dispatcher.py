@@ -1,6 +1,16 @@
 import logging
 
 from app.core.settings import get_settings
+from app.core.observability.request_context import (
+    generate_request_id,
+    generate_trace_id,
+    get_request_id,
+    get_trace_id,
+    reset_request_id,
+    reset_trace_id,
+    set_request_id,
+    set_trace_id,
+)
 from app.services.backend_client import BackendClient
 from app.services.container_pool import ContainerPool
 from app.services.executor_client import ExecutorClient
@@ -56,6 +66,8 @@ class TaskDispatcher:
         callback_token = settings.callback_token
 
         executor_url = None
+        request_id_token = set_request_id(get_request_id() or generate_request_id())
+        trace_id_token = set_trace_id(get_trace_id() or generate_trace_id())
         try:
             logger.info(
                 f"Dispatching task {task_id} (session: {session_id}, mode: {container_mode})"
@@ -102,6 +114,9 @@ class TaskDispatcher:
             await backend_client.update_session_status(session_id, "failed")
             await container_pool.cancel_task(session_id)
             raise
+        finally:
+            reset_request_id(request_id_token)
+            reset_trace_id(trace_id_token)
 
     @staticmethod
     async def on_task_complete(session_id: str) -> None:

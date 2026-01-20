@@ -1,6 +1,12 @@
 import httpx
 
 from app.core.settings import get_settings
+from app.core.observability.request_context import (
+    generate_request_id,
+    generate_trace_id,
+    get_request_id,
+    get_trace_id,
+)
 
 
 class ExecutorClient:
@@ -9,6 +15,13 @@ class ExecutorClient:
     def __init__(self) -> None:
         self.settings = get_settings()
         self.executor_url = self.settings.executor_url
+
+    @staticmethod
+    def _trace_headers() -> dict[str, str]:
+        return {
+            "X-Request-ID": get_request_id() or generate_request_id(),
+            "X-Trace-ID": get_trace_id() or generate_trace_id(),
+        }
 
     async def execute_task(
         self,
@@ -45,6 +58,7 @@ class ExecutorClient:
                     "config": config,
                     "sdk_session_id": sdk_session_id,
                 },
+                headers=self._trace_headers(),
                 timeout=httpx.Timeout(30.0, connect=10.0),
             )
             response.raise_for_status()

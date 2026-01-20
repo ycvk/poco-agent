@@ -66,7 +66,7 @@ class WorkspaceManager:
         """Initialize directory structure."""
         for directory in [self.active_dir, self.archive_dir, self.temp_dir]:
             directory.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Ensured directory exists: {directory}")
+            logger.debug("workspace_dir_ready", extra={"path": str(directory)})
 
     def get_workspace_path(
         self,
@@ -241,7 +241,10 @@ class WorkspaceManager:
 
         meta_file = session_dir / "meta.json"
         _ = meta_file.write_text(json.dumps(meta.to_dict(), indent=2), encoding="utf-8")
-        logger.info(f"Created meta file: {meta_file}")
+        logger.debug(
+            "workspace_meta_written",
+            extra={"session_id": session_id, "meta_file": str(meta_file)},
+        )
 
     def get_meta(self, user_id: str, session_id: str) -> WorkspaceMeta | None:
         """Read metadata file."""

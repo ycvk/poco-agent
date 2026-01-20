@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     host: str = Field(default="0.0.0.0")
     port: int = Field(default=8001)
     debug: bool = Field(default=False, alias="DEBUG")
+    log_level: str | None = Field(default=None, alias="LOG_LEVEL")
+    uvicorn_access_log: bool = Field(default=False, alias="UVICORN_ACCESS_LOG")
     cors_origins: list[str] = Field(default=["http://localhost:3000"])
 
     # External service URLs

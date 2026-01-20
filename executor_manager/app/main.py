@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     settings = get_settings()
-    configure_logging(debug=settings.debug)
+    configure_logging(
+        debug=settings.debug,
+        service_name="executor_manager",
+        access_log=settings.uvicorn_access_log,
+    )
 
     app = FastAPI(
         title=settings.app_name,

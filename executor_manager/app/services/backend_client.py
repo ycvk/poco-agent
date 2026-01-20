@@ -1,6 +1,12 @@
 import httpx
 
 from app.core.settings import get_settings
+from app.core.observability.request_context import (
+    generate_request_id,
+    generate_trace_id,
+    get_request_id,
+    get_trace_id,
+)
 
 
 class BackendClient:
@@ -10,12 +16,21 @@ class BackendClient:
         self.settings = get_settings()
         self.base_url = self.settings.backend_url
 
+    @staticmethod
+    def _trace_headers() -> dict[str, str]:
+        # When called from an HTTP request handler, these come from middleware context.
+        return {
+            "X-Request-ID": get_request_id() or generate_request_id(),
+            "X-Trace-ID": get_trace_id() or generate_trace_id(),
+        }
+
     async def create_session(self, user_id: str, config: dict) -> dict:
         """Create a session, returns session info dict with session_id and sdk_session_id."""
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/api/v1/sessions",
                 json={"user_id": user_id, "config": config},
+                headers=self._trace_headers(),
             )
             response.raise_for_status()
             data = response.json()
@@ -27,6 +42,7 @@ class BackendClient:
             response = await client.patch(
                 f"{self.base_url}/api/v1/sessions/{session_id}",
                 json={"status": status},
+                headers=self._trace_headers(),
             )
             response.raise_for_status()
 
@@ -36,6 +52,7 @@ class BackendClient:
             response = await client.post(
                 f"{self.base_url}/api/v1/callback",
                 json=callback_data,
+                headers=self._trace_headers(),
             )
             response.raise_for_status()
 
@@ -54,6 +71,7 @@ class BackendClient:
             response = await client.post(
                 f"{self.base_url}/api/v1/runs/claim",
                 json=payload,
+                headers=self._trace_headers(),
             )
             response.raise_for_status()
             data = response.json()
@@ -65,6 +83,7 @@ class BackendClient:
             response = await client.post(
                 f"{self.base_url}/api/v1/runs/{run_id}/start",
                 json={"worker_id": worker_id},
+                headers=self._trace_headers(),
             )
             response.raise_for_status()
             data = response.json()
@@ -78,6 +97,7 @@ class BackendClient:
             response = await client.post(
                 f"{self.base_url}/api/v1/runs/{run_id}/fail",
                 json={"worker_id": worker_id, "error_message": error_message},
+                headers=self._trace_headers(),
             )
             response.raise_for_status()
             data = response.json()
@@ -90,6 +110,7 @@ class BackendClient:
                 headers={
                     "X-Internal-Token": self.settings.internal_api_token,
                     "X-User-Id": user_id,
+                    **self._trace_headers(),
                 },
             )
             response.raise_for_status()
@@ -101,6 +122,7 @@ class BackendClient:
             response = await client.get(
                 f"{self.base_url}/api/v1/skill-presets",
                 params={"include_inactive": str(include_inactive).lower()},
+                headers=self._trace_headers(),
             )
             response.raise_for_status()
             data = response.json()
@@ -111,7 +133,10 @@ class BackendClient:
             response = await client.post(
                 f"{self.base_url}/api/v1/internal/user-input-requests",
                 json=payload,
-                headers={"X-Internal-Token": self.settings.internal_api_token},
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
             )
             response.raise_for_status()
             data = response.json()
@@ -121,7 +146,10 @@ class BackendClient:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.base_url}/api/v1/internal/user-input-requests/{request_id}",
-                headers={"X-Internal-Token": self.settings.internal_api_token},
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
             )
             response.raise_for_status()
             data = response.json()

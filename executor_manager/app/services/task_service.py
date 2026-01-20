@@ -159,7 +159,8 @@ class TaskService:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{backend_client.settings.backend_url}/api/v1/sessions/{session_id}"
+                    f"{backend_client.settings.backend_url}/api/v1/sessions/{session_id}",
+                    headers=backend_client._trace_headers(),
                 )
                 response.raise_for_status()
                 data = response.json()

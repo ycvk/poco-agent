@@ -33,10 +33,21 @@ class CallbackService:
         from app.core.errors.error_codes import ErrorCode
         from app.core.errors.exceptions import AppException
 
-        # Log callback summary
-        logger.info(
-            f"Callback received - Session: {callback.session_id}, "
-            f"Status: {callback.status}, Progress: {callback.progress}%"
+        # High-frequency callbacks: keep RUNNING as DEBUG; only completed/failed stay at INFO.
+        summary_level = (
+            logging.INFO
+            if callback.status in ["completed", "failed"]
+            else logging.DEBUG
+        )
+        logger.log(
+            summary_level,
+            "callback_received",
+            extra={
+                "session_id": callback.session_id,
+                "status": callback.status,
+                "progress": callback.progress,
+                "sdk_session_id": callback.sdk_session_id,
+            },
         )
 
         if callback.state_patch:
@@ -46,8 +57,14 @@ class CallbackService:
             file_count = (
                 len(state.workspace_state.file_changes) if state.workspace_state else 0
             )
-            logger.info(
-                f"State patch: {todo_count} todos, {mcp_count} MCP servers, {file_count} file changes"
+            logger.debug(
+                "callback_state_patch_summary",
+                extra={
+                    "session_id": callback.session_id,
+                    "todo_count": todo_count,
+                    "mcp_count": mcp_count,
+                    "file_change_count": file_count,
+                },
             )
 
         try:
@@ -65,7 +82,11 @@ class CallbackService:
                 from app.scheduler.task_dispatcher import TaskDispatcher
 
                 logger.info(
-                    f"Task {callback.status}, cleaning up container for session {callback.session_id}"
+                    "task_terminal_callback_received",
+                    extra={
+                        "session_id": callback.session_id,
+                        "status": callback.status,
+                    },
                 )
                 asyncio.create_task(self._export_and_forward(callback))
                 await TaskDispatcher.on_task_complete(callback.session_id)
@@ -77,11 +98,14 @@ class CallbackService:
                 progress=callback.progress,
             )
 
-        except Exception as e:
-            logger.error(f"Failed to forward callback: {e}")
+        except Exception:
+            logger.exception(
+                "callback_forward_failed",
+                extra={"session_id": callback.session_id, "status": callback.status},
+            )
             raise AppException(
                 error_code=ErrorCode.CALLBACK_FORWARD_FAILED,
-                message=f"Failed to forward callback to backend: {e}",
+                message="Failed to forward callback to backend",
             )
 
     async def _export_and_forward(self, callback: AgentCallbackRequest) -> None:
@@ -89,8 +113,11 @@ class CallbackService:
             result = await asyncio.to_thread(
                 workspace_export_service.export_workspace, callback.session_id
             )
-        except Exception as exc:
-            logger.error(f"Workspace export failed for {callback.session_id}: {exc}")
+        except Exception:
+            logger.exception(
+                "workspace_export_failed",
+                extra={"session_id": callback.session_id},
+            )
             result = None
 
         payload_model = AgentCallbackRequest(
@@ -110,7 +137,8 @@ class CallbackService:
 
         try:
             await backend_client.forward_callback(payload)
-        except Exception as exc:
-            logger.error(
-                f"Failed to forward workspace export callback for {callback.session_id}: {exc}"
+        except Exception:
+            logger.exception(
+                "workspace_export_callback_forward_failed",
+                extra={"session_id": callback.session_id},
             )
