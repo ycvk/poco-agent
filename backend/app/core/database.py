@@ -9,7 +9,9 @@ settings = get_settings()
 
 engine = create_engine(
     settings.database_url,
-    echo=settings.debug,
+    # Avoid logging full SQL statements by default (can be enabled via LOG_SQL=true).
+    echo=settings.log_sql,
+    hide_parameters=True,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,

@@ -6,13 +6,15 @@ from app.core.middleware.request_context import (
     TRACE_ID_HEADER,
     RequestContextMiddleware,
 )
+from app.core.middleware.request_logging import RequestLoggingMiddleware
 from app.core.settings import get_settings
 
 
 def setup_middleware(app: FastAPI) -> None:
     settings = get_settings()
 
-    app.add_middleware(RequestContextMiddleware)
+    # Inner -> outer: add order matters (Starlette wraps last-added as the outermost).
+    app.add_middleware(RequestLoggingMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
@@ -22,3 +24,6 @@ def setup_middleware(app: FastAPI) -> None:
         allow_headers=["*"],
         expose_headers=[REQUEST_ID_HEADER, TRACE_ID_HEADER],
     )
+
+    # Outermost: ensure request_id/trace_id exist for all downstream logs.
+    app.add_middleware(RequestContextMiddleware)

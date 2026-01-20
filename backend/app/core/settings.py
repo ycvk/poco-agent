@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     app_name: str = Field(default="OpenCoWork Backend")
     app_version: str = Field(default="0.1.0")
     debug: bool = Field(default=False)
+    log_level: str | None = Field(default=None, alias="LOG_LEVEL")
+    log_sql: bool = Field(default=False, alias="LOG_SQL")
+    uvicorn_access_log: bool = Field(default=False, alias="UVICORN_ACCESS_LOG")
 
     host: str = Field(default="0.0.0.0")
     port: int = Field(default=8000)

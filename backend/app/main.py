@@ -10,7 +10,12 @@ from app.core.settings import get_settings
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    configure_logging(debug=settings.debug)
+    configure_logging(
+        debug=settings.debug,
+        service_name="backend",
+        log_sql=settings.log_sql,
+        access_log=settings.uvicorn_access_log,
+    )
 
     app = FastAPI(
         title=settings.app_name,

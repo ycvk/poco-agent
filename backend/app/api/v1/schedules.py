@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.errors.error_codes import ErrorCode
 from app.core.errors.exceptions import AppException
+from app.core.observability.request_context import get_request_id, get_trace_id
 from app.core.settings import get_settings
 from app.schemas.response import Response, ResponseSchema
 
@@ -20,7 +21,14 @@ async def get_schedules() -> JSONResponse:
     url = f"{settings.executor_manager_url}/api/v1/schedules"
 
     try:
-        request = Request(url, headers={"accept": "application/json"})
+        headers = {"accept": "application/json"}
+        request_id = get_request_id()
+        if request_id:
+            headers["X-Request-ID"] = request_id
+        trace_id = get_trace_id()
+        if trace_id:
+            headers["X-Trace-ID"] = trace_id
+        request = Request(url, headers=headers)
         with urlopen(request, timeout=3) as resp:  # noqa: S310
             payload = json.loads(resp.read().decode("utf-8"))
         data = payload.get("data", payload) if isinstance(payload, dict) else payload

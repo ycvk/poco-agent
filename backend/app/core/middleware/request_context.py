@@ -16,7 +16,7 @@ TRACE_ID_HEADER = "X-Trace-ID"
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        request_id = generate_request_id()
+        request_id = request.headers.get(REQUEST_ID_HEADER) or generate_request_id()
         trace_id = request.headers.get(TRACE_ID_HEADER) or generate_trace_id()
 
         request_id_token = set_request_id(request_id)

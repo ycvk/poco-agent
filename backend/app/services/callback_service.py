@@ -56,7 +56,8 @@ class CallbackService:
             return "system"
 
         logger.warning(
-            f"Unknown message type: {message_type}, defaulting to 'assistant'"
+            "unknown_message_type_default_role",
+            extra={"message_type": message_type, "default_role": "assistant"},
         )
         return "assistant"
 
@@ -184,10 +185,14 @@ class CallbackService:
         output_tokens = usage_data.get("output_tokens")
 
         logger.info(
-            f"Persisted usage log for session {session_id}: "
-            f"cost=${total_cost_usd}, "
-            f"tokens={input_tokens}+{output_tokens}, "
-            f"duration={duration_ms}ms"
+            "usage_log_persisted",
+            extra={
+                "session_id": str(session_id),
+                "cost_usd": total_cost_usd,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "duration_ms": duration_ms,
+            },
         )
 
     def _persist_message_and_tools(
@@ -216,8 +221,13 @@ class CallbackService:
         self._extract_tool_executions(db, message, session_id, db_message.id)
 
         db.commit()
-        logger.info(
-            f"Persisted message {db_message.id} (role={role}) for session {session_id}"
+        logger.debug(
+            "message_persisted",
+            extra={
+                "session_id": str(session_id),
+                "message_id": db_message.id,
+                "role": role,
+            },
         )
 
     def process_agent_callback(
@@ -229,7 +239,10 @@ class CallbackService:
         )
 
         if not db_session:
-            logger.warning(f"Session not found for callback: {callback.session_id}")
+            logger.warning(
+                "callback_session_not_found",
+                extra={"callback_session_id": callback.session_id},
+            )
             return CallbackResponse(
                 session_id=callback.session_id,
                 status="callback_received",
@@ -275,12 +288,20 @@ class CallbackService:
             )
             if "sdk_session_id" in update_data:
                 logger.info(
-                    f"Updated session {db_session.id} with sdk_session_id={derived_sdk_session_id}"
+                    "session_sdk_session_id_updated",
+                    extra={
+                        "session_id": str(db_session.id),
+                        "sdk_session_id": derived_sdk_session_id,
+                    },
                 )
             if "status" in update_data:
                 logger.info(
-                    f"Updated session {db_session.id} status to {callback.status.value} "
-                    f"via callback from {callback.session_id}"
+                    "session_status_updated_via_callback",
+                    extra={
+                        "session_id": str(db_session.id),
+                        "status": callback.status.value,
+                        "callback_session_id": callback.session_id,
+                    },
                 )
 
         if callback.new_message:
