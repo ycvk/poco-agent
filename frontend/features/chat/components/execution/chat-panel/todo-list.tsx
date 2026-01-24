@@ -19,6 +19,12 @@ export function TodoList({ todos, progress = 0, currentStep }: TodoListProps) {
   const completedCount = todos.filter(
     (todo) => todo.status === "completed",
   ).length;
+  const derivedProgress =
+    progress > 0
+      ? progress
+      : todos.length > 0
+        ? Math.round((completedCount / todos.length) * 100)
+        : 0;
 
   return (
     <Card className="overflow-hidden">
@@ -36,12 +42,12 @@ export function TodoList({ todos, progress = 0, currentStep }: TodoListProps) {
               )}
             </span>
             <span className="text-xs text-muted-foreground font-normal">
-              {completedCount}/{todos.length} {progress}%
+              {completedCount}/{todos.length} {derivedProgress}%
             </span>
           </CardTitle>
 
           {/* Progress bar */}
-          <Progress value={progress} className="h-1" />
+          <Progress value={derivedProgress} className="h-1" />
         </div>
       </CardHeader>
 

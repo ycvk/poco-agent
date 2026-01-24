@@ -6,6 +6,7 @@ from app.core.callback import CallbackClient
 from app.core.user_input import UserInputClient
 from app.core.engine import AgentExecutor
 from app.hooks.callback import CallbackHook
+from app.hooks.todo import TodoHook
 from app.hooks.workspace import WorkspaceHook
 from app.core.observability.request_context import get_request_id, get_trace_id
 from app.schemas.request import TaskRun
@@ -32,6 +33,7 @@ async def run_task(req: TaskRun, background_tasks: BackgroundTasks) -> dict:
     user_input_client = UserInputClient(base_url=base_url)
     hooks = [
         WorkspaceHook(),
+        TodoHook(),
         CallbackHook(client=callback_client),
     ]
     executor = AgentExecutor(

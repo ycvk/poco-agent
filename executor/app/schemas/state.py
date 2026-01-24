@@ -10,7 +10,7 @@ class TodoItem(BaseModel):
 
     content: str
     status: TodoStatus
-    active_form: str | None = None
+    active_form: str | None = Field(default=None, validation_alias="activeForm")
 
 
 class McpStatus(BaseModel):

@@ -129,7 +129,7 @@ class AgentExecutor:
                 cwd=ctx.cwd,
                 resume=self.sdk_session_id,
                 setting_sources=["project"],
-                allowed_tools=["Skill", "Read", "Write", "Bash"],
+                allowed_tools=["Skill", "Read", "Write", "Bash", "TodoWrite"],
                 mcp_servers=config.mcp_config,
                 permission_mode="default",
                 model=os.environ["DEFAULT_MODEL"],
