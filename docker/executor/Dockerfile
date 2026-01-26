@@ -1,6 +1,9 @@
 FROM ghcr.io/poco-ai/sandbox:latest
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Install uv via Gitee mirror
+RUN curl -LsSf https://gitee.com/wangnov/uv-custom/releases/download/latest/uv-installer-custom.sh | sh \
+    && mv /root/.local/bin/uv /usr/local/bin/ \
+    && mv /root/.local/bin/uvx /usr/local/bin/
 
 RUN mkdir -p /app && chown -R ubuntu:ubuntu /app
 WORKDIR /app
