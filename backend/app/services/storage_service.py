@@ -36,7 +36,7 @@ class S3StorageService:
         self.bucket = settings.s3_bucket
         self.presign_expires = settings.s3_presign_expires
 
-        config_kwargs: dict[str, Any] = {}
+        config_kwargs: dict[str, Any] = {"signature_version": "s3v4"}
         if settings.s3_force_path_style:
             config_kwargs["s3"] = {"addressing_style": "path"}
 
