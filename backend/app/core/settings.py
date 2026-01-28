@@ -31,6 +31,7 @@ class Settings(BaseSettings):
         default="http://localhost:8001", alias="EXECUTOR_MANAGER_URL"
     )
     s3_endpoint: str | None = Field(default=None, alias="S3_ENDPOINT")
+    s3_public_endpoint: str | None = Field(default=None, alias="S3_PUBLIC_ENDPOINT")
     s3_access_key: str | None = Field(default=None, alias="S3_ACCESS_KEY")
     s3_secret_key: str | None = Field(default=None, alias="S3_SECRET_KEY")
     s3_region: str = Field(default="us-east-1", alias="S3_REGION")

@@ -36,6 +36,13 @@ class S3StorageService:
         self.bucket = settings.s3_bucket
         self.presign_expires = settings.s3_presign_expires
 
+        endpoint = settings.s3_endpoint.rstrip("/")
+        public_endpoint = (settings.s3_public_endpoint or "").strip()
+        if public_endpoint:
+            public_endpoint = public_endpoint.rstrip("/")
+        else:
+            public_endpoint = endpoint
+
         config_kwargs: dict[str, Any] = {
             "signature_version": "s3v4",
             "connect_timeout": settings.s3_connect_timeout_seconds,
@@ -52,11 +59,23 @@ class S3StorageService:
 
         self.client = boto3.client(
             "s3",
-            endpoint_url=settings.s3_endpoint,
+            endpoint_url=endpoint,
             aws_access_key_id=settings.s3_access_key,
             aws_secret_access_key=settings.s3_secret_key,
             region_name=settings.s3_region,
             config=config,
+        )
+        self.presign_client = (
+            self.client
+            if public_endpoint == endpoint
+            else boto3.client(
+                "s3",
+                endpoint_url=public_endpoint,
+                aws_access_key_id=settings.s3_access_key,
+                aws_secret_access_key=settings.s3_secret_key,
+                region_name=settings.s3_region,
+                config=config,
+            )
         )
 
     def get_manifest(self, key: str) -> dict[str, Any]:
@@ -86,7 +105,7 @@ class S3StorageService:
         if response_content_type:
             params["ResponseContentType"] = response_content_type
         try:
-            return self.client.generate_presigned_url(
+            return self.presign_client.generate_presigned_url(
                 "get_object",
                 Params=params,
                 ExpiresIn=expires_in or self.presign_expires,
