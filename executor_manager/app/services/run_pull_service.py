@@ -13,6 +13,7 @@ from app.services.executor_client import ExecutorClient
 from app.services.config_resolver import ConfigResolver
 from app.services.skill_stager import SkillStager
 from app.services.attachment_stager import AttachmentStager
+from app.services.slash_command_stager import SlashCommandStager
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ class RunPullService:
         self.config_resolver = ConfigResolver(self.backend_client)
         self.skill_stager = SkillStager()
         self.attachment_stager = AttachmentStager()
+        self.slash_command_stager = SlashCommandStager()
 
         self.worker_id = f"{socket.gethostname()}:{os.getpid()}"
         self._semaphore = asyncio.Semaphore(self.settings.max_concurrent_tasks)
@@ -245,6 +247,25 @@ class RunPullService:
                     "step": "run_dispatch_stage_inputs",
                     "duration_ms": int((time.perf_counter() - step_started) * 1000),
                     "inputs_staged": len(staged_inputs),
+                    **ctx,
+                },
+            )
+
+            step_started = time.perf_counter()
+            resolved_commands = await self.backend_client.resolve_slash_commands(
+                user_id=user_id
+            )
+            staged_commands = self.slash_command_stager.stage_commands(
+                user_id=user_id,
+                session_id=session_id,
+                commands=resolved_commands,
+            )
+            logger.info(
+                "timing",
+                extra={
+                    "step": "run_dispatch_stage_slash_commands",
+                    "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                    "commands_staged": len(staged_commands),
                     **ctx,
                 },
             )

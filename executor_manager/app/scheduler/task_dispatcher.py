@@ -18,6 +18,7 @@ from app.services.executor_client import ExecutorClient
 from app.services.config_resolver import ConfigResolver
 from app.services.skill_stager import SkillStager
 from app.services.attachment_stager import AttachmentStager
+from app.services.slash_command_stager import SlashCommandStager
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class TaskDispatcher:
         config_resolver = ConfigResolver(backend_client)
         skill_stager = SkillStager()
         attachment_stager = AttachmentStager()
+        slash_command_stager = SlashCommandStager()
 
         user_id = config.get("user_id", "")
         container_mode = config.get("container_mode", "ephemeral")
@@ -148,6 +150,27 @@ class TaskDispatcher:
                     "session_id": session_id,
                     "user_id": user_id,
                     "inputs_staged": len(staged_inputs),
+                },
+            )
+
+            step_started = time.perf_counter()
+            resolved_commands = await backend_client.resolve_slash_commands(
+                user_id=user_id
+            )
+            staged_commands = slash_command_stager.stage_commands(
+                user_id=user_id,
+                session_id=session_id,
+                commands=resolved_commands,
+            )
+            logger.info(
+                "timing",
+                extra={
+                    "step": "task_dispatch_stage_slash_commands",
+                    "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                    "task_id": task_id,
+                    "session_id": session_id,
+                    "user_id": user_id,
+                    "commands_staged": len(staged_commands),
                 },
             )
 

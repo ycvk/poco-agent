@@ -149,6 +149,28 @@ class BackendClient:
             data = response.json()
             return data.get("data", {}) or {}
 
+    async def resolve_slash_commands(
+        self, user_id: str, names: list[str] | None = None
+    ) -> dict[str, str]:
+        """Resolve enabled slash commands for execution (rendered markdown)."""
+        payload: dict = {"names": names or []}
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/api/v1/internal/slash-commands/resolve",
+                json=payload,
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    "X-User-Id": user_id,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            resolved = data.get("data", {}) or {}
+            if not isinstance(resolved, dict):
+                return {}
+            return {str(k): str(v) for k, v in resolved.items() if isinstance(v, str)}
+
     async def dispatch_due_scheduled_tasks(self, limit: int = 50) -> dict:
         """Trigger backend to dispatch due scheduled tasks into the run queue."""
         payload = {"limit": max(1, int(limit))}

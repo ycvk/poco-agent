@@ -74,11 +74,15 @@ class AgentExecutor:
         try:
             await self.hooks.run_on_setup(ctx)
 
-            input_hint = self._build_input_hint(config)
-            if input_hint:
-                prompt = f"{input_hint}\n\n{prompt}"
+            # Slash commands must be sent as-is (no prefix text), otherwise the SDK may not
+            # recognize them as commands.
+            is_slash_command = prompt.lstrip().startswith("/")
+            if not is_slash_command:
+                input_hint = self._build_input_hint(config)
+                if input_hint:
+                    prompt = f"{input_hint}\n\n{prompt}"
 
-            prompt = f"{prompt}\n\nCurrent working directory: {ctx.cwd}"
+                prompt = f"{prompt}\n\nCurrent working directory: {ctx.cwd}"
 
             async def dummy_hook(
                 input_data: HookInput, tool_use_id: str | None, context: HookContext
