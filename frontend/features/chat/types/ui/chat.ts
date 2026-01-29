@@ -29,6 +29,8 @@ export type ToolUseBlock = {
   id: string;
   name: string;
   input: Record<string, unknown>;
+  // When the tool spawns a subagent (e.g., Task), we attach a flattened transcript here.
+  subagent_transcript?: string[];
 };
 
 export type ToolResultBlock = {

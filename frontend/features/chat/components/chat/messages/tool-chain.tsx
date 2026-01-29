@@ -35,6 +35,44 @@ function ToolStep({ toolUse, toolResult, isOpen, onToggle }: ToolStepProps) {
   const isCompleted = !!toolResult;
   const isError = toolResult?.is_error;
   const isLoading = !isCompleted;
+  const isTaskTool = toolUse.name === "Task";
+
+  const taskMeta = React.useMemo(() => {
+    if (!isTaskTool) return null;
+    const input = toolUse.input || {};
+    const subagentType =
+      typeof input["subagent_type"] === "string"
+        ? input["subagent_type"]
+        : typeof input["subagentType"] === "string"
+          ? input["subagentType"]
+          : "";
+    const description =
+      typeof input["description"] === "string" ? input["description"] : "";
+    return {
+      subagentType: subagentType.trim(),
+      description: description.trim(),
+    };
+  }, [isTaskTool, toolUse.input]);
+
+  const outputText = React.useMemo(() => {
+    if (!toolResult) return "";
+    if (!isTaskTool) return toolResult.content;
+    try {
+      const parsed = JSON.parse(toolResult.content);
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        "result" in parsed &&
+        typeof (parsed as { result?: unknown }).result === "string"
+      ) {
+        const result = (parsed as { result: string }).result.trim();
+        if (result) return result;
+      }
+    } catch {
+      // fall back to raw content
+    }
+    return toolResult.content;
+  }, [isTaskTool, toolResult]);
 
   return (
     <div className="border border-border/50 rounded-md bg-muted/30 overflow-hidden mb-2 last:mb-0">
@@ -53,8 +91,13 @@ function ToolStep({ toolUse, toolResult, isOpen, onToggle }: ToolStepProps) {
           <div className="flex-1 min-w-0 flex items-center gap-2">
             <span className="text-xs font-mono font-medium text-foreground truncate">
               {toolUse.name}
+              {taskMeta?.subagentType ? ` (${taskMeta.subagentType})` : ""}
             </span>
-            {/* Optional: Show short input summary for specific tools if needed */}
+            {taskMeta?.description ? (
+              <span className="text-[11px] text-muted-foreground truncate">
+                {taskMeta.description}
+              </span>
+            ) : null}
           </div>
 
           <div className="shrink-0 flex items-center gap-2">
@@ -63,7 +106,7 @@ function ToolStep({ toolUse, toolResult, isOpen, onToggle }: ToolStepProps) {
                 variant="outline"
                 className="h-4 px-1 text-[10px] bg-background text-muted-foreground rounded-sm border-transparent animate-pulse"
               >
-                Running
+                {t("status.running")}
               </Badge>
             ) : null}
             {isOpen ? (
@@ -103,11 +146,25 @@ function ToolStep({ toolUse, toolResult, isOpen, onToggle }: ToolStepProps) {
                   )}
                 >
                   <pre className="whitespace-pre-wrap break-all">
-                    {toolResult.content}
+                    {outputText}
                   </pre>
                 </div>
               </div>
             )}
+
+            {toolUse.subagent_transcript &&
+            toolUse.subagent_transcript.length > 0 ? (
+              <div>
+                <div className="text-[10px] uppercase text-muted-foreground mb-1 select-none">
+                  {t("chat.subagentTranscript", "子代理过程")}
+                </div>
+                <div className="bg-muted/50 p-2 rounded overflow-x-auto text-foreground/90">
+                  <pre className="whitespace-pre-wrap break-all">
+                    {toolUse.subagent_transcript.join("\n\n")}
+                  </pre>
+                </div>
+              </div>
+            ) : null}
           </div>
         </CollapsibleContent>
       </Collapsible>

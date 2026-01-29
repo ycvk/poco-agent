@@ -40,6 +40,17 @@ interface MessageContentShape {
   subtype?: string;
   content?: MessageContentBlock[];
   text?: string;
+  parent_tool_use_id?: string | null;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function typeIncludes(typeValue: unknown, needle: string): boolean {
+  if (!isNonEmptyString(typeValue)) return false;
+  // Be tolerant to namespaced types like "claude_agent_sdk.ToolUseBlock".
+  return typeValue === needle || typeValue.includes(needle);
 }
 
 /**
@@ -172,10 +183,12 @@ export const chatService = {
       timezone?: string;
       scheduled_at?: string;
     },
+    permission_mode?: string,
   ): Promise<TaskEnqueueResponse> => {
     return chatService.enqueueTask({
       prompt,
       config,
+      permission_mode,
       schedule_mode: schedule?.schedule_mode || "immediate",
       timezone: schedule?.timezone,
       scheduled_at: schedule?.scheduled_at,
@@ -249,23 +262,56 @@ export const chatService = {
 
       const processedMessages: ChatMessage[] = [];
       const internalContextsByUserMessageId: Record<string, string[]> = {};
+      const subagentTranscriptByToolUseId: Record<string, string[]> = {};
       let currentAssistantMessage: ChatMessage | null = null;
       let currentTurnUserMessageId: string | null = null;
 
       for (const msg of messages) {
         const contentObj = msg.content as MessageContentShape;
         if (
-          contentObj._type === "SystemMessage" &&
+          typeIncludes(contentObj._type, "SystemMessage") &&
           contentObj.subtype === "init"
         ) {
           continue;
         }
 
-        if (msg.role === "assistant" && contentObj.content) {
+        const parentToolUseId = isNonEmptyString(contentObj.parent_tool_use_id)
+          ? contentObj.parent_tool_use_id.trim()
+          : null;
+
+        // Subagent messages are nested under a parent tool call (e.g., Task).
+        // We keep them out of the main timeline and attach a flattened transcript to the parent ToolUseBlock.
+        if (parentToolUseId) {
+          const nestedTexts: string[] = [];
+          if (isNonEmptyString(contentObj.text)) {
+            nestedTexts.push(cleanText(contentObj.text));
+          }
+          if (Array.isArray(contentObj.content)) {
+            for (const block of contentObj.content) {
+              if (!typeIncludes(block?._type, "TextBlock")) continue;
+              if (isNonEmptyString(block.text)) {
+                nestedTexts.push(cleanText(block.text));
+              }
+            }
+          }
+          const cleaned = nestedTexts
+            .map((t) => t.trim())
+            .filter(Boolean)
+            .join("\n\n");
+          if (cleaned) {
+            subagentTranscriptByToolUseId[parentToolUseId] = [
+              ...(subagentTranscriptByToolUseId[parentToolUseId] || []),
+              cleaned,
+            ];
+          }
+          continue;
+        }
+
+        if (msg.role === "assistant" && Array.isArray(contentObj.content)) {
           const blocks = contentObj.content;
 
-          const toolUseBlocks = blocks.filter(
-            (b) => b._type === "ToolUseBlock",
+          const toolUseBlocks = blocks.filter((b) =>
+            typeIncludes(b?._type, "ToolUseBlock"),
           );
 
           if (toolUseBlocks.length > 0) {
@@ -285,9 +331,12 @@ export const chatService = {
 
             const uiToolBlocks = toolUseBlocks.map((b) => ({
               _type: "ToolUseBlock" as const,
-              id: b.id || "",
-              name: b.name || "",
-              input: b.input || {},
+              id: typeof b.id === "string" ? b.id : String(b.id ?? ""),
+              name: typeof b.name === "string" ? b.name : String(b.name ?? ""),
+              input:
+                b.input && typeof b.input === "object"
+                  ? (b.input as Record<string, unknown>)
+                  : {},
             }));
 
             currentAssistantMessage.content = [
@@ -297,20 +346,36 @@ export const chatService = {
           }
         }
 
-        if (msg.role === "user" && contentObj.content) {
+        // ToolResultBlock is typically a user-role message (Anthropic style), but some providers
+        // may emit it under assistant-role. Don't rely on msg.role to attach results.
+        if (Array.isArray(contentObj.content)) {
           const blocks = contentObj.content;
-          const toolResultBlocks = blocks.filter(
-            (b) => b._type === "ToolResultBlock",
+          const toolResultBlocks = blocks.filter((b) =>
+            typeIncludes(b?._type, "ToolResultBlock"),
           );
 
-          if (toolResultBlocks.length > 0 && currentAssistantMessage) {
+          if (toolResultBlocks.length > 0) {
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id.toString(),
+                role: "assistant",
+                content: [],
+                status: "completed",
+                timestamp: msg.created_at,
+              };
+              processedMessages.push(currentAssistantMessage);
+            }
+
             const uiResultBlocks = toolResultBlocks.map((b) => ({
               _type: "ToolResultBlock" as const,
-              tool_use_id: b.tool_use_id || "",
+              tool_use_id:
+                typeof b.tool_use_id === "string"
+                  ? b.tool_use_id
+                  : String(b.tool_use_id ?? ""),
               content: cleanText(
                 typeof b.content === "string"
                   ? b.content
-                  : JSON.stringify(b.content),
+                  : (JSON.stringify(b.content) ?? ""),
               ),
               is_error: !!b.is_error,
             }));
@@ -320,14 +385,16 @@ export const chatService = {
               ...existingBlocks,
               ...uiResultBlocks,
             ];
-            continue;
+
+            // Keep ToolResultBlock out of the user timeline.
+            if (msg.role === "user") continue;
           }
         }
 
-        if (msg.role === "assistant" && contentObj.content) {
+        if (msg.role === "assistant" && Array.isArray(contentObj.content)) {
           const blocks = contentObj.content;
-          const thinkingBlocks = blocks.filter(
-            (b) => b._type === "ThinkingBlock",
+          const thinkingBlocks = blocks.filter((b) =>
+            typeIncludes(b?._type, "ThinkingBlock"),
           );
 
           const uiThinkingBlocks = thinkingBlocks
@@ -361,13 +428,14 @@ export const chatService = {
         }
 
         let textContent = "";
-        if (contentObj.text) {
-          textContent = String(contentObj.text);
-        } else if (contentObj.content && Array.isArray(contentObj.content)) {
-          const textBlock = contentObj.content.find(
-            (b) => b._type === "TextBlock",
-          );
-          if (textBlock) textContent = cleanText(textBlock.text || "");
+        if (isNonEmptyString(contentObj.text)) {
+          textContent = cleanText(contentObj.text);
+        } else if (Array.isArray(contentObj.content)) {
+          const textBlocks = contentObj.content
+            .filter((b) => typeIncludes(b?._type, "TextBlock"))
+            .map((b) => (isNonEmptyString(b.text) ? cleanText(b.text) : ""))
+            .filter((t) => t.trim().length > 0);
+          if (textBlocks.length > 0) textContent = textBlocks.join("\n\n");
         }
 
         if (textContent) {
@@ -421,6 +489,18 @@ export const chatService = {
             }
           }
         }
+      }
+
+      // Attach subagent transcript to tool blocks (main timeline only).
+      for (const message of processedMessages) {
+        if (message.role !== "assistant") continue;
+        if (!Array.isArray(message.content)) continue;
+        message.content = (message.content as MessageBlock[]).map((block) => {
+          if (block._type !== "ToolUseBlock") return block;
+          const transcript = subagentTranscriptByToolUseId[block.id];
+          if (!transcript || transcript.length === 0) return block;
+          return { ...block, subagent_transcript: transcript };
+        });
       }
 
       return {

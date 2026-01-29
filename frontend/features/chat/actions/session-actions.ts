@@ -28,6 +28,9 @@ const createSessionSchema = z
     prompt: z.string(),
     config: configSchema.optional(),
     projectId: z.string().uuid().optional(),
+    permission_mode: z
+      .enum(["default", "acceptEdits", "plan", "bypassPermissions"])
+      .optional(),
     schedule_mode: z.enum(["immediate", "scheduled", "nightly"]).optional(),
     timezone: z.string().optional().nullable(),
     scheduled_at: z.string().optional().nullable(),
@@ -84,8 +87,15 @@ export type CreateSessionInput = z.infer<typeof createSessionSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
 
 export async function createSessionAction(input: CreateSessionInput) {
-  const { prompt, config, projectId, schedule_mode, timezone, scheduled_at } =
-    createSessionSchema.parse(input);
+  const {
+    prompt,
+    config,
+    projectId,
+    permission_mode,
+    schedule_mode,
+    timezone,
+    scheduled_at,
+  } = createSessionSchema.parse(input);
   const hasInputFiles = Boolean(config?.input_files?.length);
   const finalPrompt =
     prompt.trim() || (hasInputFiles ? "Uploaded files" : prompt);
@@ -98,6 +108,7 @@ export async function createSessionAction(input: CreateSessionInput) {
       timezone: timezone || undefined,
       scheduled_at: scheduled_at || undefined,
     },
+    permission_mode,
   );
   return {
     sessionId: result.session_id,

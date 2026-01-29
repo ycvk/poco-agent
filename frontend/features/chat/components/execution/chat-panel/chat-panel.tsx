@@ -8,6 +8,7 @@ import { StatusBar } from "./status-bar";
 import { PendingMessageList } from "./pending-message-list";
 import { ChatInput } from "./chat-input";
 import { UserInputRequestCard } from "./user-input-request-card";
+import { PlanApprovalCard } from "./plan-approval-card";
 import { PanelHeader } from "@/components/shared/panel-header";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { usePendingMessages } from "./hooks/use-pending-messages";
@@ -179,13 +180,26 @@ export function ChatPanel({
 
       {activeUserInput && (
         <div className="px-4 pb-3">
-          <UserInputRequestCard
-            request={activeUserInput}
-            isSubmitting={isSubmittingUserInput}
-            onSubmit={(answers) =>
-              submitUserInputAnswer(activeUserInput.id, answers)
-            }
-          />
+          {activeUserInput.tool_name === "ExitPlanMode" ? (
+            <PlanApprovalCard
+              request={activeUserInput}
+              isSubmitting={isSubmittingUserInput}
+              onApprove={() =>
+                submitUserInputAnswer(activeUserInput.id, { approved: "true" })
+              }
+              onReject={() =>
+                submitUserInputAnswer(activeUserInput.id, { approved: "false" })
+              }
+            />
+          ) : (
+            <UserInputRequestCard
+              request={activeUserInput}
+              isSubmitting={isSubmittingUserInput}
+              onSubmit={(answers) =>
+                submitUserInputAnswer(activeUserInput.id, answers)
+              }
+            />
+          )}
         </div>
       )}
 

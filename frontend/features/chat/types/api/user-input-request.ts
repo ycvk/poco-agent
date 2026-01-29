@@ -17,6 +17,8 @@ export interface UserInputRequest {
   tool_input: {
     questions?: UserInputQuestion[];
     answers?: Record<string, string> | null;
+    plan?: string;
+    [key: string]: unknown;
   };
   status: string;
   answers?: Record<string, string> | null;

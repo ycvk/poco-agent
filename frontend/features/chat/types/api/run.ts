@@ -10,6 +10,7 @@ export interface TaskEnqueueRequest {
   prompt: string;
   config?: TaskConfig | null;
   session_id?: string | null; // UUID, optional for continuing session
+  permission_mode?: string; // e.g., "default" | "plan"
   schedule_mode?: string; // defaults to "immediate"
   timezone?: string | null;
   scheduled_at?: string | null; // ISO datetime
@@ -27,6 +28,7 @@ export interface RunResponse {
   session_id: string; // UUID
   user_message_id: number;
   status: string;
+  permission_mode: string;
   progress: number;
   schedule_mode: string;
   scheduled_task_id?: string | null;

@@ -91,15 +91,11 @@ export function HomePageClient() {
           return;
         }
 
-        const finalPrompt =
-          mode === "plan"
-            ? t("hero.modes.planPrefix", { prompt: inputValue })
-            : inputValue;
-
         // 1. Call create session API
         const session = await createSessionAction({
-          prompt: finalPrompt,
+          prompt: inputValue,
           config: Object.keys(config).length > 0 ? config : undefined,
+          permission_mode: mode === "plan" ? "plan" : "default",
           schedule_mode: runSchedule?.schedule_mode,
           timezone: runSchedule?.timezone,
           scheduled_at: runSchedule?.scheduled_at,
