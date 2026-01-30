@@ -33,6 +33,14 @@ export interface MessageNewData {
   message: Record<string, unknown>;
 }
 
+export interface WSMessageData {
+  id: number;
+  role: string;
+  content: Record<string, unknown>;
+  timestamp: string | null;
+  text_preview: string | null;
+}
+
 export type ConnectionState =
   | "connecting"
   | "connected"
