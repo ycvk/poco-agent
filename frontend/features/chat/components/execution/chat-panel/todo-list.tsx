@@ -3,7 +3,8 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, CircleDot } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/client";
 import type { TodoItem as TodoItemType } from "@/features/chat/types";
 
@@ -56,17 +57,31 @@ export function TodoList({ todos, progress = 0, currentStep }: TodoListProps) {
         <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
           {todos.map((todo, index) => {
             const isCompleted = todo.status === "completed";
+            const isInProgress = todo.status === "in_progress";
+
+            // Show active_form when in progress, otherwise show content
+            const displayText =
+              isInProgress && todo.active_form
+                ? todo.active_form
+                : todo.content;
+
             return (
               <div
                 key={index}
-                className="flex items-center gap-1.5 text-xs text-foreground/80"
+                className={cn(
+                  "flex items-center gap-1.5 text-xs rounded px-1.5 -mx-1.5 py-0.5 transition-colors duration-200",
+                  isInProgress && "bg-primary/10",
+                  isCompleted ? "text-foreground/80" : "text-foreground/60",
+                )}
               >
                 {isCompleted ? (
                   <CheckCircle2 className="size-3.5 text-foreground shrink-0" />
+                ) : isInProgress ? (
+                  <CircleDot className="size-3.5 text-primary shrink-0 animate-pulse-glow" />
                 ) : (
                   <Circle className="size-3.5 text-muted-foreground shrink-0" />
                 )}
-                <span className="truncate">{todo.content}</span>
+                <span className="truncate">{displayText}</span>
               </div>
             );
           })}
