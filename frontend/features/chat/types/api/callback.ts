@@ -6,7 +6,7 @@ export type CallbackStatus = "accepted" | "running" | "completed" | "failed";
 
 export interface TodoItem {
   content: string;
-  status: string;
+  status: "pending" | "in_progress" | "completed";
   active_form?: string | null;
 }
 
