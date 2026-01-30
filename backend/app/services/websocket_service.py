@@ -1,9 +1,9 @@
 # backend/app/services/websocket_service.py
 import logging
-from typing import Any
 
 from app.core.websocket.events import EventType, WSEvent
 from app.core.websocket.manager import ws_manager
+from app.models.agent_message import AgentMessage
 from app.schemas.callback import AgentCallbackRequest
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,11 @@ logger = logging.getLogger(__name__)
 class WebSocketService:
     """Service for broadcasting events to WebSocket clients."""
 
-    async def broadcast_callback(self, callback: AgentCallbackRequest) -> None:
+    async def broadcast_callback(
+        self,
+        callback: AgentCallbackRequest,
+        db_message: AgentMessage | None = None,
+    ) -> None:
         """Broadcast callback data as WebSocket events."""
         session_id = callback.session_id
 
@@ -46,14 +50,24 @@ class WebSocketService:
             )
             await ws_manager.broadcast(session_id, todo_event.to_dict())
 
-        # New message event
-        if callback.new_message:
+        # New message event - push full message content
+        if db_message:
             message_event = WSEvent(
                 type=EventType.MESSAGE_NEW,
                 session_id=session_id,
-                data={"message": callback.new_message},
+                data={
+                    "id": db_message.id,
+                    "role": db_message.role,
+                    "content": db_message.content,
+                    "timestamp": db_message.created_at.isoformat() if db_message.created_at else None,
+                    "text_preview": db_message.text_preview,
+                },
             )
             await ws_manager.broadcast(session_id, message_event.to_dict())
+            logger.debug(
+                "ws_message_broadcast",
+                extra={"session_id": session_id, "message_id": db_message.id},
+            )
 
 
 websocket_service = WebSocketService()
