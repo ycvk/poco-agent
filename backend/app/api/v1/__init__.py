@@ -25,6 +25,7 @@ from app.api.v1 import (
     tool_executions,
     user_input_requests,
     user_mcp_installs,
+    ws,
 )
 from app.core.settings import get_settings
 from app.schemas.response import Response
@@ -55,6 +56,7 @@ api_v1_router.include_router(skill_installs.router)
 api_v1_router.include_router(slash_commands.router)
 api_v1_router.include_router(user_input_requests.router)
 api_v1_router.include_router(scheduled_tasks.router)
+api_v1_router.include_router(ws.router)
 
 
 @api_v1_router.get("/")
