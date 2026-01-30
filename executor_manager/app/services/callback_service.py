@@ -150,6 +150,7 @@ class CallbackService:
 
             if callback.status in ["completed", "failed"]:
                 from app.scheduler.task_dispatcher import TaskDispatcher
+                from app.core.runtime import get_pull_service
 
                 logger.info(
                     "task_terminal_callback_received",
@@ -160,6 +161,12 @@ class CallbackService:
                 )
                 asyncio.create_task(self._export_and_forward(callback))
                 await TaskDispatcher.on_task_complete(callback.session_id)
+                pull_service = get_pull_service()
+                if pull_service is not None:
+                    pull_service.trigger_poll(
+                        schedule_modes=None,
+                        reason="task_complete",
+                    )
 
             return CallbackReceiveResponse(
                 status="received",

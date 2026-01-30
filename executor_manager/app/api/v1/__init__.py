@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.v1 import (
     callback,
     executor,
+    pull,
     schedules,
     tasks,
     user_input_requests,
@@ -20,6 +21,7 @@ api_v1_router.include_router(callback.router)
 api_v1_router.include_router(executor.router)
 api_v1_router.include_router(workspace.router)
 api_v1_router.include_router(user_input_requests.router)
+api_v1_router.include_router(pull.router)
 
 
 @api_v1_router.get("/")

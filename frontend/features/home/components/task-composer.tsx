@@ -555,14 +555,24 @@ export function TaskComposer({
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon-sm"
+                  size={mode === "task" ? "sm" : "icon-sm"}
                   disabled={isSubmitting || isUploading}
-                  className={`rounded-xl ${mode === "task" ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
+                  className={cn(
+                    "rounded-xl transition-all duration-200",
+                    mode === "task"
+                      ? "bg-primary/20 text-primary hover:bg-primary/30 gap-1.5 px-3"
+                      : "",
+                  )}
                   aria-label={t("hero.modes.task")}
                   title={t("hero.modes.task")}
                   onClick={() => onModeChange("task")}
                 >
                   <SquareTerminal className="size-4" />
+                  {mode === "task" && (
+                    <span className="text-xs font-medium">
+                      {t("hero.modes.task")}
+                    </span>
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" sideOffset={8}>
@@ -576,14 +586,24 @@ export function TaskComposer({
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon-sm"
+                  size={mode === "plan" ? "sm" : "icon-sm"}
                   disabled={isSubmitting || isUploading}
-                  className={`rounded-xl ${mode === "plan" ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
+                  className={cn(
+                    "rounded-xl transition-all duration-200",
+                    mode === "plan"
+                      ? "bg-primary/20 text-primary hover:bg-primary/30 gap-1.5 px-3"
+                      : "",
+                  )}
                   aria-label={t("hero.modes.plan")}
                   title={t("hero.modes.plan")}
                   onClick={() => onModeChange("plan")}
                 >
                   <ListTodo className="size-4" />
+                  {mode === "plan" && (
+                    <span className="text-xs font-medium">
+                      {t("hero.modes.plan")}
+                    </span>
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" sideOffset={8}>
@@ -597,9 +617,14 @@ export function TaskComposer({
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon-sm"
+                  size={mode === "scheduled" ? "sm" : "icon-sm"}
                   disabled={isSubmitting || isUploading}
-                  className={`rounded-xl ${mode === "scheduled" ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
+                  className={cn(
+                    "rounded-xl transition-all duration-200",
+                    mode === "scheduled"
+                      ? "bg-primary/20 text-primary hover:bg-primary/30 gap-1.5 px-3"
+                      : "",
+                  )}
                   aria-label={t("hero.modes.scheduled")}
                   title={t("hero.modes.scheduled")}
                   onClick={() => {
@@ -609,6 +634,11 @@ export function TaskComposer({
                   }}
                 >
                   <Clock className="size-4" />
+                  {mode === "scheduled" && (
+                    <span className="text-xs font-medium">
+                      {t("hero.modes.scheduled")}
+                    </span>
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" sideOffset={8}>

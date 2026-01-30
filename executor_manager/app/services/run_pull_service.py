@@ -3,6 +3,7 @@ import logging
 import os
 import socket
 import time
+from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -33,11 +34,121 @@ class RunPullService:
 
         self.worker_id = f"{socket.gethostname()}:{os.getpid()}"
         self._semaphore = asyncio.Semaphore(self.settings.max_concurrent_tasks)
+        self._poll_lock = asyncio.Lock()
         self._tasks: set[asyncio.Task[None]] = set()
         self._shutdown = False
         self._logged_started = False
         self._windows_until: dict[str, datetime] = {}
         self._window_locks: dict[str, asyncio.Lock] = {}
+        self._trigger_task: asyncio.Task[None] | None = None
+        self._trigger_pending_modes: set[str] = set()
+        self._trigger_debounce_seconds: float = 0.25
+
+    def get_active_schedule_modes(self) -> list[str]:
+        """Return currently active schedule modes for pulling runs.
+
+        Uses the effective PullScheduleConfig (if registered); otherwise falls back to settings.
+        """
+        try:
+            from app.scheduler.pull_schedule_state import get_current_pull_schedule_config
+            from app.scheduler.pull_schedule_config import WindowPullRule
+        except Exception:
+            get_current_pull_schedule_config = None
+            WindowPullRule = None
+
+        modes: set[str] = set()
+
+        if get_current_pull_schedule_config is not None:
+            config = get_current_pull_schedule_config()
+            if config and bool(getattr(config, "enabled", False)):
+                rules = getattr(config, "rules", []) or []
+                now_utc = datetime.now(timezone.utc)
+                for rule in rules:
+                    if not bool(getattr(rule, "enabled", False)):
+                        continue
+                    if WindowPullRule is not None and isinstance(rule, WindowPullRule):
+                        until = self._windows_until.get(rule.id)
+                        if not until or now_utc >= until:
+                            continue
+                    for mode in getattr(rule, "schedule_modes", []) or []:
+                        if isinstance(mode, str) and mode.strip():
+                            modes.add(mode.strip())
+
+        if modes:
+            return sorted(modes)
+
+        # Fallback for early startup / no schedule config.
+        if self.settings.task_pull_immediate_enabled:
+            modes.add("immediate")
+        if self.settings.task_pull_scheduled_enabled:
+            modes.add("scheduled")
+        if self.settings.task_pull_nightly_enabled:
+            modes.add("nightly")
+        return sorted(modes)
+
+    def trigger_poll(
+        self,
+        *,
+        schedule_modes: list[str] | None = None,
+        reason: str | None = None,
+    ) -> bool:
+        """Trigger a best-effort poll with debounce to avoid thundering herd.
+
+        Returns:
+            True if this call scheduled a new trigger task or added new schedule modes.
+        """
+        if self._shutdown:
+            return False
+
+        cleaned_modes = [
+            m.strip()
+            for m in (schedule_modes or [])
+            if isinstance(m, str) and m.strip()
+        ]
+        if not cleaned_modes:
+            cleaned_modes = self.get_active_schedule_modes()
+        if not cleaned_modes:
+            return False
+
+        before = set(self._trigger_pending_modes)
+        self._trigger_pending_modes.update(cleaned_modes)
+        added = before != self._trigger_pending_modes
+
+        existing = self._trigger_task
+        if existing and not existing.done():
+            return added
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            logger.warning(
+                "pull_trigger_no_loop",
+                extra={"schedule_modes": cleaned_modes, "reason": reason},
+            )
+            return False
+
+        self._trigger_task = loop.create_task(self._run_trigger_loop(reason=reason))
+        return True
+
+    async def _run_trigger_loop(self, *, reason: str | None) -> None:
+        while not self._shutdown:
+            debounce_seconds = max(
+                0.0, float(getattr(self, "_trigger_debounce_seconds", 0.25))
+            )
+            await asyncio.sleep(debounce_seconds)
+            schedule_modes = sorted(self._trigger_pending_modes)
+            self._trigger_pending_modes.clear()
+            if not schedule_modes:
+                return
+            try:
+                await self.poll(schedule_modes=schedule_modes)
+            except Exception:
+                logger.exception(
+                    "pull_trigger_failed",
+                    extra={"schedule_modes": schedule_modes, "reason": reason},
+                )
+            if not self._trigger_pending_modes:
+                return
 
     def _get_window_lock(self, window_id: str) -> asyncio.Lock:
         lock = self._window_locks.get(window_id)
@@ -106,6 +217,10 @@ class RunPullService:
         if self._shutdown:
             return
 
+        async with self._poll_lock:
+            await self._poll_locked(schedule_modes=schedule_modes)
+
+    async def _poll_locked(self, schedule_modes: list[str] | None = None) -> None:
         lease_seconds = max(5, int(self.settings.task_claim_lease_seconds))
 
         if not self._logged_started:
@@ -154,6 +269,11 @@ class RunPullService:
     async def shutdown(self) -> None:
         """Request shutdown and cancel inflight dispatch tasks."""
         self._shutdown = True
+        if self._trigger_task:
+            self._trigger_task.cancel()
+            with suppress(Exception):
+                await self._trigger_task
+            self._trigger_task = None
         await self._drain_tasks()
 
     def _on_task_done(self, task: asyncio.Task[None]) -> None:

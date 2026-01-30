@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user_id, get_db
 from app.schemas.response import Response, ResponseSchema
 from app.schemas.task import TaskEnqueueRequest, TaskEnqueueResponse
+from app.services.executor_manager_client import trigger_run_pull
 from app.services.session_title_service import SessionTitleService
 from app.services.task_service import TaskService
 
@@ -26,5 +27,11 @@ async def enqueue_task(
     if request.session_id is None:
         background_tasks.add_task(
             title_service.generate_and_update, result.session_id, request.prompt
+        )
+    if request.schedule_mode == "immediate" and request.scheduled_at is None:
+        background_tasks.add_task(
+            trigger_run_pull,
+            schedule_modes=["immediate"],
+            reason=f"enqueue_run:{result.run_id}",
         )
     return Response.success(data=result, message="Task enqueued successfully")
