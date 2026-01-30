@@ -48,7 +48,7 @@
     "modes": {
       "task": "任务",
       "taskHelp": "一次性执行，适合大多数问题。",
-      "plan": "分步执行",
+      "plan": "计划",
       "planHelp": "先生成可执行计划，确认后再按步骤执行（适合复杂问题）。",
       "scheduled": "定时任务",
       "scheduledHelp": "按 Cron 自动触发执行，可复用工作区。",
