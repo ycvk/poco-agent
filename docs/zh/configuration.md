@@ -107,10 +107,15 @@ Frontend 现在默认通过 Next.js 的 **同源 API 代理**（`/api/v1/* -> Ba
 
 - `NEXT_PUBLIC_API_URL`：浏览器侧访问 Backend 的 base URL（示例：`http://localhost:8000`）。注意该变量会被 Next.js 内联进产物。
 
-注意：以下变量仍是构建期（build-time）生效，会被 Next.js 内联进产物（见 `docker/frontend/Dockerfile` 的 build args）。
+WebSocket（可选）：
 
-- `NEXT_PUBLIC_SESSION_POLLING_INTERVAL`：session 轮询间隔（毫秒，默认 `2500`）
-- `NEXT_PUBLIC_MESSAGE_POLLING_INTERVAL`：消息轮询间隔（毫秒，默认 `2500`）
+- `NEXT_PUBLIC_WS_URL`：浏览器侧使用的 WebSocket base URL（例如 `ws://localhost:8000` 或 `wss://example.com`）。注意该变量会被 Next.js 在构建期内联进产物。
+
+注意：
+
+- 如果未设置 `NEXT_PUBLIC_WS_URL`，前端会使用运行时启发式策略（生产环境同源；本地 `:3000` 默认连 `:8000`）。
+- Next.js 的 `/api/v1/* -> Backend` 同源代理 **不支持 WebSocket 升级**；生产环境要使用 WebSocket，你需要在反向代理（Nginx/Traefik/Caddy 等）配置 `Upgrade` 转发到 Backend，或显式把 `NEXT_PUBLIC_WS_URL` 指向可直连的 Backend WebSocket 地址。
+- `NEXT_PUBLIC_SESSION_POLLING_INTERVAL` / `NEXT_PUBLIC_MESSAGE_POLLING_INTERVAL` 已废弃，迁移为 WebSocket 实时更新后不再使用。
 
 ## Postgres（Docker 镜像）
 

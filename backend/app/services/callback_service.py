@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -19,6 +18,7 @@ from app.schemas.callback import (
 )
 from app.schemas.session import SessionUpdateRequest
 from app.services.session_service import SessionService
+from app.core.websocket.manager import schedule_ws
 
 logger = logging.getLogger(__name__)
 
@@ -372,11 +372,11 @@ class CallbackService:
                     db_run.progress = 100
 
             self._sync_scheduled_task_last_status(db, db_run)
-            db.commit()
+        db.commit()
 
         # Broadcast to WebSocket clients
         from app.services.websocket_service import websocket_service
-        asyncio.create_task(websocket_service.broadcast_callback(callback, db_message=db_message))
+        schedule_ws(websocket_service.broadcast_callback(callback, db_message=db_message))
 
         return CallbackResponse(
             session_id=str(db_session.id),

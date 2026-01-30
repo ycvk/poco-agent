@@ -2,18 +2,36 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ConnectionState,
+  SessionPatchData,
+  SessionSnapshotData,
   SessionStatusData,
   TodoUpdateData,
+  UserInputUpdateData,
   WSEvent,
+  WorkspaceExportData,
+  WorkspaceFileUrlData,
+  WorkspaceFilesData,
   WSMessageData,
 } from "../types/websocket";
 import type { TodoItem } from "../types";
 
-const WS_BASE_URL =
-  process.env.NEXT_PUBLIC_WS_URL ||
-  (typeof window !== "undefined"
-    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`
-    : "ws://localhost:8000");
+function getDefaultWsBaseUrl(): string {
+  if (typeof window === "undefined") {
+    return "ws://localhost:8000";
+  }
+
+  const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+  // Heuristic for local dev: frontend on 3000, backend on 8000.
+  // For production behind a reverse proxy, keep same-origin.
+  if (window.location.port === "3000") {
+    return `${wsProtocol}//${window.location.hostname}:8000`;
+  }
+
+  return `${wsProtocol}//${window.location.host}`;
+}
+
+const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || getDefaultWsBaseUrl();
 
 const HEARTBEAT_INTERVAL = 30000;
 const RECONNECT_DELAY = 3000;
@@ -21,8 +39,14 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 
 interface UseSessionWebSocketOptions {
   sessionId: string | null;
+  onSnapshot?: (data: SessionSnapshotData) => void;
   onStatusChange?: (data: SessionStatusData) => void;
   onTodoUpdate?: (todos: TodoItem[]) => void;
+  onStatePatch?: (data: SessionPatchData) => void;
+  onUserInputUpdate?: (data: UserInputUpdateData) => void;
+  onWorkspaceExport?: (data: WorkspaceExportData) => void;
+  onWorkspaceFiles?: (data: WorkspaceFilesData) => void;
+  onWorkspaceFileUrl?: (data: WorkspaceFileUrlData) => void;
   /** @deprecated Use onNewMessage for typed message handling */
   onMessage?: (message: Record<string, unknown>) => void;
   /** Called when a new message is received via WebSocket */
@@ -36,12 +60,19 @@ interface UseSessionWebSocketReturn {
   connectionState: ConnectionState;
   reconnectAttempts: number;
   lastEvent: WSEvent | null;
+  sendJson: (payload: Record<string, unknown>) => void;
 }
 
 export function useSessionWebSocket({
   sessionId,
+  onSnapshot,
   onStatusChange,
   onTodoUpdate,
+  onStatePatch,
+  onUserInputUpdate,
+  onWorkspaceExport,
+  onWorkspaceFiles,
+  onWorkspaceFileUrl,
   onMessage,
   onNewMessage,
   onReconnect,
@@ -58,13 +89,23 @@ export function useSessionWebSocket({
   const hadPreviousConnectionRef = useRef(false);
 
   // Store callbacks in refs to avoid recreating connect function
+  const onSnapshotRef = useRef(onSnapshot);
   const onStatusChangeRef = useRef(onStatusChange);
   const onTodoUpdateRef = useRef(onTodoUpdate);
+  const onStatePatchRef = useRef(onStatePatch);
+  const onUserInputUpdateRef = useRef(onUserInputUpdate);
+  const onWorkspaceExportRef = useRef(onWorkspaceExport);
+  const onWorkspaceFilesRef = useRef(onWorkspaceFiles);
+  const onWorkspaceFileUrlRef = useRef(onWorkspaceFileUrl);
   const onMessageRef = useRef(onMessage);
   const onNewMessageRef = useRef(onNewMessage);
   const onReconnectRef = useRef(onReconnect);
 
   // Update refs when callbacks change
+  useEffect(() => {
+    onSnapshotRef.current = onSnapshot;
+  }, [onSnapshot]);
+
   useEffect(() => {
     onStatusChangeRef.current = onStatusChange;
   }, [onStatusChange]);
@@ -72,6 +113,26 @@ export function useSessionWebSocket({
   useEffect(() => {
     onTodoUpdateRef.current = onTodoUpdate;
   }, [onTodoUpdate]);
+
+  useEffect(() => {
+    onStatePatchRef.current = onStatePatch;
+  }, [onStatePatch]);
+
+  useEffect(() => {
+    onUserInputUpdateRef.current = onUserInputUpdate;
+  }, [onUserInputUpdate]);
+
+  useEffect(() => {
+    onWorkspaceExportRef.current = onWorkspaceExport;
+  }, [onWorkspaceExport]);
+
+  useEffect(() => {
+    onWorkspaceFilesRef.current = onWorkspaceFiles;
+  }, [onWorkspaceFiles]);
+
+  useEffect(() => {
+    onWorkspaceFileUrlRef.current = onWorkspaceFileUrl;
+  }, [onWorkspaceFileUrl]);
 
   useEffect(() => {
     onMessageRef.current = onMessage;
@@ -84,6 +145,12 @@ export function useSessionWebSocket({
   useEffect(() => {
     onReconnectRef.current = onReconnect;
   }, [onReconnect]);
+
+  const sendJson = useCallback((payload: Record<string, unknown>) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify(payload));
+  }, []);
 
   const cleanup = useCallback(() => {
     if (heartbeatRef.current) {
@@ -146,14 +213,27 @@ export function useSessionWebSocket({
         setLastEvent(data);
 
         switch (data.type) {
+          case "session.snapshot":
+            onSnapshotRef.current?.(
+              data.data as unknown as SessionSnapshotData,
+            );
+            break;
           case "session.status":
             onStatusChangeRef.current?.(
               data.data as unknown as SessionStatusData,
             );
             break;
+          case "session.patch":
+            onStatePatchRef.current?.(data.data as unknown as SessionPatchData);
+            break;
           case "todo.update":
             onTodoUpdateRef.current?.(
               (data.data as unknown as TodoUpdateData).todos as TodoItem[],
+            );
+            break;
+          case "user_input.update":
+            onUserInputUpdateRef.current?.(
+              data.data as unknown as UserInputUpdateData,
             );
             break;
           case "message.new": {
@@ -163,6 +243,21 @@ export function useSessionWebSocket({
             onMessageRef.current?.(data.data as Record<string, unknown>);
             break;
           }
+          case "workspace.export":
+            onWorkspaceExportRef.current?.(
+              data.data as unknown as WorkspaceExportData,
+            );
+            break;
+          case "workspace.files":
+            onWorkspaceFilesRef.current?.(
+              data.data as unknown as WorkspaceFilesData,
+            );
+            break;
+          case "workspace.file.url":
+            onWorkspaceFileUrlRef.current?.(
+              data.data as unknown as WorkspaceFileUrlData,
+            );
+            break;
         }
       } catch (err) {
         console.error("[WS] Failed to parse message:", err);
@@ -224,5 +319,6 @@ export function useSessionWebSocket({
     connectionState,
     reconnectAttempts,
     lastEvent,
+    sendJson,
   };
 }

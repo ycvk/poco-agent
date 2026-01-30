@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.core.errors.error_codes import ErrorCode
 from app.core.errors.exceptions import AppException
+from app.core.websocket.manager import schedule_ws
 from app.models.skill_import_job import SkillImportJob
 from app.repositories.skill_import_job_repository import SkillImportJobRepository
 from app.schemas.skill_import import (
@@ -68,6 +69,8 @@ class SkillImportJobService:
     def process_commit_job(self, job_id: uuid.UUID) -> None:
         """Run a skill import commit job in the background."""
 
+        from app.services.websocket_service import websocket_service
+
         db = SessionLocal()
         job: SkillImportJob | None = None
         try:
@@ -83,18 +86,26 @@ class SkillImportJobService:
             job.started_at = datetime.now(timezone.utc)
             job.error = None
             db.commit()
+            schedule_ws(websocket_service.broadcast_skill_import_job(job_id=job_id))
 
             request = SkillImportCommitRequest(
                 archive_key=job.archive_key,
                 selections=job.selections,
             )
 
+            last_progress_sent = -1
+
             def on_progress(processed: int, total: int) -> None:
+                nonlocal last_progress_sent
                 if total <= 0:
                     return
-                # Persist coarse progress so the UI can poll.
+                # Persist coarse progress so the UI can render progress updates.
                 job_ref.progress = min(99, int(processed * 100 / total))
                 db.commit()
+                if int(job_ref.progress) == last_progress_sent:
+                    return
+                last_progress_sent = int(job_ref.progress)
+                schedule_ws(websocket_service.broadcast_skill_import_job(job_id=job_id))
 
             result = self.import_service.commit(
                 db,
@@ -104,11 +115,13 @@ class SkillImportJobService:
             )
 
             self._mark_success(db, job, result)
+            schedule_ws(websocket_service.broadcast_skill_import_job(job_id=job_id))
         except Exception as exc:
             logger.exception("skill_import_job_failed", extra={"job_id": str(job_id)})
             if job is not None:
                 db.rollback()
                 self._mark_failed(db, job, str(exc))
+                schedule_ws(websocket_service.broadcast_skill_import_job(job_id=job_id))
         finally:
             db.close()
 

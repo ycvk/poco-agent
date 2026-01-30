@@ -138,7 +138,6 @@ const VIEW_CLASSNAME =
   "h-full w-full max-h-full animate-in fade-in duration-300 [--tw-enter-opacity:1] [--tw-enter-scale:1] [--tw-enter-translate-x:0] [--tw-enter-translate-y:0] overflow-hidden flex flex-col min-h-0";
 
 const DEFAULT_TEXT_LANGUAGE = "text";
-const NO_SOURCE_ERROR = "NO_SOURCE";
 
 type FileContentState =
   | { status: "idle" | "loading" }
@@ -169,40 +168,35 @@ const useFileTextContent = ({
       return;
     }
 
+    if (!fallbackUrl) {
+      setState({ status: "loading" });
+      return;
+    }
+
     let isMounted = true;
     const controller = new AbortController();
 
     const load = async () => {
       setState({ status: "loading" });
       try {
-        let text: string | undefined;
+        const isSameOrigin =
+          typeof window !== "undefined" &&
+          new URL(fallbackUrl, window.location.origin).origin ===
+            window.location.origin;
 
-        if (fallbackUrl) {
-          const isSameOrigin =
-            typeof window !== "undefined" &&
-            new URL(fallbackUrl, window.location.origin).origin ===
-              window.location.origin;
-
-          const response = await fetch(fallbackUrl, {
-            signal: controller.signal,
-            credentials: isSameOrigin ? "include" : "omit",
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          text = await response.text();
-        } else {
-          throw new Error(NO_SOURCE_ERROR);
+        const response = await fetch(fallbackUrl, {
+          signal: controller.signal,
+          credentials: isSameOrigin ? "include" : "omit",
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
+        const text = await response.text();
 
         if (!isMounted) return;
         setState({ status: "success", content: text ?? "" });
       } catch (error) {
         if (!isMounted || controller.signal.aborted) return;
-        if (error instanceof Error && error.message === NO_SOURCE_ERROR) {
-          setState({ status: "error", code: "NO_SOURCE" });
-          return;
-        }
         setState({
           status: "error",
           code: "FETCH_ERROR",

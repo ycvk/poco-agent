@@ -12,7 +12,6 @@ import { PlanApprovalCard } from "./plan-approval-card";
 import { PanelHeader } from "@/components/shared/panel-header";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { usePendingMessages } from "./hooks/use-pending-messages";
-import { useUserInputRequests } from "./hooks/use-user-input-requests";
 import type {
   ExecutionSession,
   StatePatch,
@@ -20,6 +19,7 @@ import type {
   WSMessageData,
 } from "@/features/chat/types";
 import { useT } from "@/lib/i18n/client";
+import { useSessionRealtime } from "@/features/chat/contexts/session-realtime-context";
 
 interface ChatPanelProps {
   session: ExecutionSession | null;
@@ -99,11 +99,9 @@ export function ChatPanel({
   const isSessionActive =
     session?.status === "running" || session?.status === "accepted";
 
-  const {
-    requests: userInputRequests,
-    isLoading: isSubmittingUserInput,
-    submitAnswer: submitUserInputAnswer,
-  } = useUserInputRequests(session?.session_id, isSessionActive);
+  const { userInputRequests, submitUserInputAnswer } = useSessionRealtime();
+  const [isSubmittingUserInput, setIsSubmittingUserInput] =
+    React.useState(false);
 
   const activeUserInput = userInputRequests[0];
 
@@ -207,10 +205,28 @@ export function ChatPanel({
               request={activeUserInput}
               isSubmitting={isSubmittingUserInput}
               onApprove={() =>
-                submitUserInputAnswer(activeUserInput.id, { approved: "true" })
+                (async () => {
+                  setIsSubmittingUserInput(true);
+                  try {
+                    await submitUserInputAnswer(activeUserInput.id, {
+                      approved: "true",
+                    });
+                  } finally {
+                    setIsSubmittingUserInput(false);
+                  }
+                })()
               }
               onReject={() =>
-                submitUserInputAnswer(activeUserInput.id, { approved: "false" })
+                (async () => {
+                  setIsSubmittingUserInput(true);
+                  try {
+                    await submitUserInputAnswer(activeUserInput.id, {
+                      approved: "false",
+                    });
+                  } finally {
+                    setIsSubmittingUserInput(false);
+                  }
+                })()
               }
             />
           ) : (
@@ -218,7 +234,14 @@ export function ChatPanel({
               request={activeUserInput}
               isSubmitting={isSubmittingUserInput}
               onSubmit={(answers) =>
-                submitUserInputAnswer(activeUserInput.id, answers)
+                (async () => {
+                  setIsSubmittingUserInput(true);
+                  try {
+                    await submitUserInputAnswer(activeUserInput.id, answers);
+                  } finally {
+                    setIsSubmittingUserInput(false);
+                  }
+                })()
               }
             />
           )}

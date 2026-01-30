@@ -110,10 +110,15 @@ Optional (build-time only, for direct browser access or static deployment):
 
 - `NEXT_PUBLIC_API_URL`: Backend base URL used by the browser (e.g. `http://localhost:8000`). This variable is inlined by Next.js at build time.
 
-Note: the following variables are also **build-time** and are inlined into the output (see `docker/frontend/Dockerfile` build args):
+WebSocket (optional):
 
-- `NEXT_PUBLIC_SESSION_POLLING_INTERVAL`: session polling interval (ms, default `2500`)
-- `NEXT_PUBLIC_MESSAGE_POLLING_INTERVAL`: message polling interval (ms, default `2500`)
+- `NEXT_PUBLIC_WS_URL`: WebSocket base URL used by the browser (e.g. `ws://localhost:8000` or `wss://example.com`). This variable is inlined by Next.js at build time.
+
+Notes:
+
+- If `NEXT_PUBLIC_WS_URL` is not set, the frontend will fall back to a runtime heuristic (same-origin in production, `:8000` when running on `:3000` locally).
+- The Next.js same-origin API proxy (`/api/v1/* -> Backend`) does **not** support WebSocket upgrades. For production WebSocket support, configure your reverse proxy (Nginx/Traefik/Caddy, etc.) to forward `Upgrade` requests to the Backend, or explicitly set `NEXT_PUBLIC_WS_URL` to a directly reachable Backend WebSocket endpoint.
+- `NEXT_PUBLIC_SESSION_POLLING_INTERVAL` / `NEXT_PUBLIC_MESSAGE_POLLING_INTERVAL` are deprecated and no longer used after migrating to WebSocket updates.
 
 ## Postgres (Docker image)
 

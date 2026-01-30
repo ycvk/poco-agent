@@ -9,12 +9,19 @@ from pydantic import BaseModel, Field
 class EventType(str, Enum):
     """WebSocket event types."""
 
+    SESSION_SNAPSHOT = "session.snapshot"
     SESSION_STATUS = "session.status"
     SESSION_PROGRESS = "session.progress"
+    SESSION_PATCH = "session.patch"
     TODO_UPDATE = "todo.update"
+    USER_INPUT_UPDATE = "user_input.update"
     MESSAGE_NEW = "message.new"
     MESSAGE_CHUNK = "message.chunk"
     TOOL_CALL = "tool.call"
+    WORKSPACE_EXPORT = "workspace.export"
+    WORKSPACE_FILES = "workspace.files"
+    WORKSPACE_FILE_URL = "workspace.file.url"
+    SKILL_IMPORT_JOB = "skill_import.job"
 
 
 class WSEvent(BaseModel):

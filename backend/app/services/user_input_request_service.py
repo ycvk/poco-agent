@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors.error_codes import ErrorCode
 from app.core.errors.exceptions import AppException
+from app.core.websocket.manager import schedule_ws
 from app.models.user_input_request import UserInputRequest
 from app.repositories.session_repository import SessionRepository
 from app.repositories.user_input_request_repository import UserInputRequestRepository
@@ -42,6 +43,11 @@ class UserInputRequestService:
         UserInputRequestRepository.create(db, entry)
         db.commit()
         db.refresh(entry)
+        from app.services.websocket_service import websocket_service
+
+        schedule_ws(
+            websocket_service.broadcast_user_input_requests(session_id=entry.session_id)
+        )
         return UserInputRequestResponse.model_validate(entry)
 
     def get_request(
@@ -60,6 +66,13 @@ class UserInputRequestService:
                 entry.status = "expired"
                 db.commit()
                 db.refresh(entry)
+                from app.services.websocket_service import websocket_service
+
+                schedule_ws(
+                    websocket_service.broadcast_user_input_requests(
+                        session_id=entry.session_id
+                    )
+                )
 
         return UserInputRequestResponse.model_validate(entry)
 
@@ -113,4 +126,9 @@ class UserInputRequestService:
         entry.answered_at = now
         db.commit()
         db.refresh(entry)
+        from app.services.websocket_service import websocket_service
+
+        schedule_ws(
+            websocket_service.broadcast_user_input_requests(session_id=entry.session_id)
+        )
         return UserInputRequestResponse.model_validate(entry)

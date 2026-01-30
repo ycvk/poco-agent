@@ -34,6 +34,18 @@ interface CandidateSelectionState {
 
 const CANDIDATES_PAGE_SIZE = 5;
 
+function getDefaultWsBaseUrl(): string {
+  if (typeof window === "undefined") {
+    return "ws://localhost:8000";
+  }
+
+  const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  if (window.location.port === "3000") {
+    return `${wsProtocol}//${window.location.hostname}:8000`;
+  }
+  return `${wsProtocol}//${window.location.host}`;
+}
+
 export interface SkillImportDialogProps {
   open: boolean;
   onClose: () => void;
@@ -223,43 +235,123 @@ export function SkillImportDialog({
       const enqueue = await skillsService.importCommit(payload);
       setCommitJobId(enqueue.job_id);
 
-      const startedAt = Date.now();
-      let finalError: string | null = null;
-      let finalResult: SkillImportCommitResponse | null = null;
-      while (true) {
-        if (!isActiveRef.current) return;
+      const wsBaseUrl =
+        process.env.NEXT_PUBLIC_WS_URL || getDefaultWsBaseUrl();
+      const wsUrl = `${wsBaseUrl}/api/v1/ws/user`;
 
-        const job = await skillsService.getImportJob(enqueue.job_id);
-        if (!isActiveRef.current) return;
+      const { error: finalError, result: finalResult } = await new Promise<{
+        error: string | null;
+        result: SkillImportCommitResponse | null;
+      }>((resolve) => {
+        let done = false;
+        let heartbeat: number | null = null;
 
-        setCommitProgress(typeof job.progress === "number" ? job.progress : 0);
+        const ws = new WebSocket(wsUrl);
 
-        if (job.status === "success") {
-          finalResult = job.result;
-          setCommitResult(job.result);
-          break;
-        }
+        const finish = (next: {
+          error: string | null;
+          result: SkillImportCommitResponse | null;
+        }) => {
+          if (done) return;
+          done = true;
 
-        if (job.status === "failed") {
-          finalError = job.error || "";
-          finalResult = job.result;
-          setCommitError(finalError);
-          setCommitResult(job.result);
-          break;
-        }
+          if (next.error) {
+            setCommitError(next.error);
+          }
 
-        // Safety net: avoid polling forever if something goes wrong.
-        if (Date.now() - startedAt > 10 * 60 * 1000) {
-          finalError = t(
-            "library.skillsImport.toasts.commitTimeout",
-            "导入超时，请稍后刷新查看结果",
+          window.clearTimeout(timeoutId);
+          if (heartbeat) window.clearInterval(heartbeat);
+          try {
+            ws.close();
+          } catch {}
+          resolve(next);
+        };
+
+        const timeoutId = window.setTimeout(() => {
+          finish({
+            error: t(
+              "library.skillsImport.toasts.commitTimeout",
+              "导入超时，请稍后刷新查看结果",
+            ),
+            result: null,
+          });
+        }, 10 * 60 * 1000);
+
+        ws.onopen = () => {
+          if (!isActiveRef.current) return;
+          // Keepalive.
+          heartbeat = window.setInterval(() => {
+            ws.send(JSON.stringify({ type: "ping" }));
+          }, 30_000);
+
+          // Request a snapshot in case we connected after the job started.
+          ws.send(
+            JSON.stringify({
+              type: "skill_import.job.request",
+              job_id: enqueue.job_id,
+            }),
           );
-          setCommitError(finalError);
-          break;
-        }
+        };
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
+        ws.onmessage = (event) => {
+          if (!isActiveRef.current) return;
+          try {
+            const payload = JSON.parse(event.data) as {
+              type?: string;
+              data?: unknown;
+            };
+            if (payload.type !== "skill_import.job") return;
+
+            const job = payload.data as {
+              job_id?: string;
+              status?: string;
+              progress?: number;
+              result?: SkillImportCommitResponse | null;
+              error?: string | null;
+            };
+            if (!job || job.job_id !== enqueue.job_id) return;
+
+            setCommitProgress(
+              typeof job.progress === "number" ? job.progress : 0,
+            );
+
+            if (job.status === "success") {
+              setCommitResult(job.result ?? null);
+              finish({ error: null, result: job.result ?? null });
+            }
+
+            if (job.status === "failed") {
+              setCommitResult(job.result ?? null);
+              finish({ error: job.error || "", result: job.result ?? null });
+            }
+          } catch (error) {
+            console.error("[SkillsImport] websocket parse failed:", error);
+          }
+        };
+
+        ws.onerror = () => {
+          if (!isActiveRef.current) return;
+          finish({
+            error: t(
+              "library.skillsImport.toasts.commitError",
+              "导入失败，请稍后重试",
+            ),
+            result: null,
+          });
+        };
+
+        ws.onclose = () => {
+          if (!isActiveRef.current) return;
+          if (done) return;
+          finish({
+            error: t(
+              "library.skillsImport.toasts.commitError",
+              "导入失败，请稍后重试",
+            ),
+            result: null,
+          });
+        };
+      });
 
       if (!isActiveRef.current) return;
 
@@ -274,7 +366,7 @@ export function SkillImportDialog({
         return;
       }
 
-      const failed = (finalResult?.items || []).filter(
+      const failed = (finalResult?.items ?? []).filter(
         (i) => i.status !== "success",
       );
       if (failed.length > 0) {
