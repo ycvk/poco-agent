@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.models.agent_message import AgentMessage
 from app.models.agent_run import AgentRun
 from app.repositories.scheduled_task_repository import ScheduledTaskRepository
 from app.repositories.message_repository import MessageRepository
@@ -234,7 +235,7 @@ class CallbackService:
 
     def _persist_message_and_tools(
         self, db: Session, session_id: uuid.UUID, message: dict[str, Any]
-    ) -> None:
+    ) -> "AgentMessage":
         role = self._extract_role_from_message(message)
 
         text_preview = None
@@ -266,6 +267,7 @@ class CallbackService:
                 "role": role,
             },
         )
+        return db_message
 
     def process_agent_callback(
         self, db: Session, callback: AgentCallbackRequest
@@ -341,8 +343,9 @@ class CallbackService:
                     },
                 )
 
+        db_message = None
         if callback.new_message:
-            self._persist_message_and_tools(db, db_session.id, callback.new_message)
+            db_message = self._persist_message_and_tools(db, db_session.id, callback.new_message)
             # Extract and persist usage data if this is a ResultMessage
             self._extract_and_persist_usage(db, db_session.id, callback.new_message)
 
@@ -373,7 +376,7 @@ class CallbackService:
 
         # Broadcast to WebSocket clients
         from app.services.websocket_service import websocket_service
-        asyncio.create_task(websocket_service.broadcast_callback(callback))
+        asyncio.create_task(websocket_service.broadcast_callback(callback, db_message=db_message))
 
         return CallbackResponse(
             session_id=str(db_session.id),
