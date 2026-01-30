@@ -549,7 +549,7 @@ export function TaskComposer({
       <div className="flex items-center justify-between px-3 pb-3">
         {/* 左侧：模式选择（Icon + Hover Label） */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-2xl border border-border bg-muted/20 p-1">
+          <div className="flex items-center gap-1 rounded-2xl border border-border bg-muted/20 p-1 min-w-40">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
