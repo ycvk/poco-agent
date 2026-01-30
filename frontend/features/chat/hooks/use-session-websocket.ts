@@ -57,6 +57,34 @@ export function useSessionWebSocket({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hadPreviousConnectionRef = useRef(false);
 
+  // Store callbacks in refs to avoid recreating connect function
+  const onStatusChangeRef = useRef(onStatusChange);
+  const onTodoUpdateRef = useRef(onTodoUpdate);
+  const onMessageRef = useRef(onMessage);
+  const onNewMessageRef = useRef(onNewMessage);
+  const onReconnectRef = useRef(onReconnect);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    onTodoUpdateRef.current = onTodoUpdate;
+  }, [onTodoUpdate]);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
+  useEffect(() => {
+    onNewMessageRef.current = onNewMessage;
+  }, [onNewMessage]);
+
+  useEffect(() => {
+    onReconnectRef.current = onReconnect;
+  }, [onReconnect]);
+
   const cleanup = useCallback(() => {
     if (heartbeatRef.current) {
       clearInterval(heartbeatRef.current);
@@ -83,6 +111,8 @@ export function useSessionWebSocket({
     wsRef.current = ws;
 
     ws.onopen = () => {
+      if (wsRef.current !== ws) return;
+
       console.log(`[WS] Connected to session ${sessionId}`);
       setConnectionState("connected");
 
@@ -91,7 +121,7 @@ export function useSessionWebSocket({
         console.log(
           `[WS] Reconnected to session ${sessionId}, fetching missed messages`,
         );
-        onReconnect?.();
+        onReconnectRef.current?.();
       }
       hadPreviousConnectionRef.current = true;
 
@@ -106,6 +136,8 @@ export function useSessionWebSocket({
     };
 
     ws.onmessage = (event) => {
+      if (wsRef.current !== ws) return;
+
       try {
         const data = JSON.parse(event.data) as WSEvent;
 
@@ -115,18 +147,20 @@ export function useSessionWebSocket({
 
         switch (data.type) {
           case "session.status":
-            onStatusChange?.(data.data as unknown as SessionStatusData);
+            onStatusChangeRef.current?.(
+              data.data as unknown as SessionStatusData,
+            );
             break;
           case "todo.update":
-            onTodoUpdate?.(
+            onTodoUpdateRef.current?.(
               (data.data as unknown as TodoUpdateData).todos as TodoItem[],
             );
             break;
           case "message.new": {
             const messageData = data.data as unknown as WSMessageData;
-            onNewMessage?.(messageData);
+            onNewMessageRef.current?.(messageData);
             // Also call deprecated onMessage for backward compatibility
-            onMessage?.(data.data as Record<string, unknown>);
+            onMessageRef.current?.(data.data as Record<string, unknown>);
             break;
           }
         }
@@ -136,40 +170,55 @@ export function useSessionWebSocket({
     };
 
     ws.onerror = (error) => {
-      console.error("[WS] Error:", error);
+      if (wsRef.current !== ws) return;
+
+      console.warn("[WS] Error:", {
+        sessionId,
+        url,
+        readyState: ws.readyState,
+        eventType: error.type,
+      });
       setConnectionState("error");
     };
 
-    ws.onclose = () => {
-      console.log(`[WS] Disconnected from session ${sessionId}`);
+    ws.onclose = (event) => {
+      if (wsRef.current !== ws) return;
+
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+
+      wsRef.current = null;
+
+      console.log(`[WS] Disconnected from session ${sessionId}`, {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
       setConnectionState("disconnected");
 
-      // Attempt reconnection
-      if (enabled && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      // Attempt reconnection - use ref for current reconnect attempts
+      if (enabled) {
         reconnectTimeoutRef.current = setTimeout(() => {
-          setReconnectAttempts((prev) => prev + 1);
-          connect();
+          setReconnectAttempts((prev) => {
+            if (prev < MAX_RECONNECT_ATTEMPTS) {
+              connect();
+            }
+            return prev + 1;
+          });
         }, RECONNECT_DELAY);
       }
     };
-  }, [
-    sessionId,
-    enabled,
-    cleanup,
-    reconnectAttempts,
-    onStatusChange,
-    onTodoUpdate,
-    onMessage,
-    onNewMessage,
-    onReconnect,
-  ]);
+  }, [sessionId, enabled, cleanup]);
 
   useEffect(() => {
     if (sessionId && enabled) {
       connect();
     }
     return cleanup;
-  }, [sessionId, enabled, connect, cleanup]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, enabled]);
 
   return {
     connectionState,

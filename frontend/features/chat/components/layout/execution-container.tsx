@@ -8,6 +8,7 @@ import { useHybridSession } from "@/features/chat/hooks/use-hybrid-session";
 import { useTaskHistoryContext } from "@/features/projects/contexts/task-history-context";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
+import type { WSMessageData } from "@/features/chat/types/websocket";
 
 import {
   ResizableHandle,
@@ -21,10 +22,43 @@ interface ExecutionContainerProps {
 
 export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
   const { refreshTasks } = useTaskHistoryContext();
+
+  // Refs to hold message handlers registered from ChatPanel
+  const messageHandlerRef = React.useRef<
+    ((message: WSMessageData) => void) | null
+  >(null);
+  const reconnectHandlerRef = React.useRef<(() => Promise<void>) | null>(null);
+
+  // Stable callbacks that forward to the ref handlers
+  const handleNewMessage = React.useCallback((message: WSMessageData) => {
+    messageHandlerRef.current?.(message);
+  }, []);
+
+  const handleReconnect = React.useCallback(async () => {
+    await reconnectHandlerRef.current?.();
+  }, []);
+
+  // Register handlers from ChatPanel
+  const registerMessageHandler = React.useCallback(
+    (handler: (message: WSMessageData) => void) => {
+      messageHandlerRef.current = handler;
+    },
+    [],
+  );
+
+  const registerReconnectHandler = React.useCallback(
+    (handler: () => Promise<void>) => {
+      reconnectHandlerRef.current = handler;
+    },
+    [],
+  );
+
   const { session, isLoading, error, updateSession, connectionMode } =
     useHybridSession({
       sessionId,
       onPollingStop: refreshTasks,
+      onNewMessage: handleNewMessage,
+      onReconnect: handleReconnect,
     });
   const isMobile = useIsMobile();
 
@@ -68,6 +102,8 @@ export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
         session={session}
         sessionId={sessionId}
         updateSession={updateSession}
+        registerMessageHandler={registerMessageHandler}
+        registerReconnectHandler={registerReconnectHandler}
       />
     );
   }
@@ -85,6 +121,8 @@ export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
               progress={session?.progress}
               currentStep={session?.state_patch.current_step ?? undefined}
               updateSession={updateSession}
+              registerMessageHandler={registerMessageHandler}
+              registerReconnectHandler={registerReconnectHandler}
             />
           </div>
         </ResizablePanel>

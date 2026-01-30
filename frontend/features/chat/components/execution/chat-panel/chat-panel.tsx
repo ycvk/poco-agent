@@ -13,11 +13,11 @@ import { PanelHeader } from "@/components/shared/panel-header";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { usePendingMessages } from "./hooks/use-pending-messages";
 import { useUserInputRequests } from "./hooks/use-user-input-requests";
-import { useSessionWebSocket } from "@/features/chat/hooks/use-session-websocket";
 import type {
   ExecutionSession,
   StatePatch,
   InputFile,
+  WSMessageData,
 } from "@/features/chat/types";
 import { useT } from "@/lib/i18n/client";
 
@@ -28,6 +28,10 @@ interface ChatPanelProps {
   currentStep?: string;
   updateSession: (newSession: Partial<ExecutionSession>) => void;
   onIconClick?: () => void;
+  /** Register new message handler for WebSocket updates */
+  registerMessageHandler?: (handler: (message: WSMessageData) => void) => void;
+  /** Register reconnect handler for WebSocket reconnection */
+  registerReconnectHandler?: (handler: () => Promise<void>) => void;
 }
 
 /**
@@ -52,6 +56,8 @@ export function ChatPanel({
   currentStep,
   updateSession,
   onIconClick,
+  registerMessageHandler,
+  registerReconnectHandler,
 }: ChatPanelProps) {
   const { t } = useT("translation");
 
@@ -67,13 +73,18 @@ export function ChatPanel({
     handleReconnect,
   } = useChatMessages({ session });
 
-  // Connect WebSocket for real-time message updates
-  useSessionWebSocket({
-    sessionId: session?.session_id ?? null,
-    enabled: !!session?.session_id,
-    onNewMessage: handleNewMessage,
-    onReconnect: handleReconnect,
-  });
+  // Register handlers with parent for WebSocket integration
+  React.useEffect(() => {
+    if (registerMessageHandler) {
+      registerMessageHandler(handleNewMessage);
+    }
+  }, [registerMessageHandler, handleNewMessage]);
+
+  React.useEffect(() => {
+    if (registerReconnectHandler) {
+      registerReconnectHandler(handleReconnect);
+    }
+  }, [registerReconnectHandler, handleReconnect]);
 
   // Pending message queue hook
   const {

@@ -9,7 +9,7 @@ import "swiper/css/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ChatPanel } from "../execution/chat-panel/chat-panel";
 import { ArtifactsPanel } from "../execution/file-panel/artifacts-panel";
-import type { ExecutionSession } from "@/features/chat/types";
+import type { ExecutionSession, WSMessageData } from "@/features/chat/types";
 import { useT } from "@/lib/i18n/client";
 import { MessageSquare, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,12 +18,16 @@ interface MobileExecutionViewProps {
   session: ExecutionSession | null;
   sessionId?: string;
   updateSession: (newSession: Partial<ExecutionSession>) => void;
+  registerMessageHandler?: (handler: (message: WSMessageData) => void) => void;
+  registerReconnectHandler?: (handler: () => Promise<void>) => void;
 }
 
 export function MobileExecutionView({
   session,
   sessionId,
   updateSession,
+  registerMessageHandler,
+  registerReconnectHandler,
 }: MobileExecutionViewProps) {
   const { t } = useT("translation");
   const { setOpenMobile } = useSidebar();
@@ -67,6 +71,8 @@ export function MobileExecutionView({
                 currentStep={session?.state_patch.current_step ?? undefined}
                 updateSession={updateSession}
                 onIconClick={() => setOpenMobile(true)}
+                registerMessageHandler={registerMessageHandler}
+                registerReconnectHandler={registerReconnectHandler}
               />
             </div>
           </SwiperSlide>

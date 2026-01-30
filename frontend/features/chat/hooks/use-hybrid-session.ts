@@ -1,8 +1,13 @@
 // frontend/features/chat/hooks/use-hybrid-session.ts
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useSessionWebSocket } from "./use-session-websocket";
 import { useExecutionSession } from "./use-execution-session";
-import type { ExecutionSession, TodoItem, SessionStatusData } from "../types";
+import type {
+  ExecutionSession,
+  TodoItem,
+  SessionStatusData,
+  WSMessageData,
+} from "../types";
 
 interface UseHybridSessionOptions {
   sessionId: string;
@@ -20,6 +25,14 @@ interface UseHybridSessionOptions {
    * Callback when session completes
    */
   onPollingStop?: () => void;
+  /**
+   * Callback when a new message is received via WebSocket
+   */
+  onNewMessage?: (message: WSMessageData) => void;
+  /**
+   * Callback when WebSocket reconnects after disconnection
+   */
+  onReconnect?: () => void;
 }
 
 interface UseHybridSessionReturn {
@@ -36,11 +49,9 @@ export function useHybridSession({
   preferWebSocket = true,
   fallbackPollingInterval = 6000,
   onPollingStop,
+  onNewMessage,
+  onReconnect,
 }: UseHybridSessionOptions): UseHybridSessionReturn {
-  const [connectionMode, setConnectionMode] = useState<"websocket" | "polling">(
-    preferWebSocket ? "websocket" : "polling",
-  );
-
   // Polling hook (always ready as fallback)
   const { session, isLoading, error, refetch, updateSession } =
     useExecutionSession({
@@ -80,21 +91,12 @@ export function useHybridSession({
     enabled: preferWebSocket && !!sessionId,
     onStatusChange: handleStatusChange,
     onTodoUpdate: handleTodoUpdate,
+    onNewMessage,
+    onReconnect,
   });
 
-  // Update connection mode based on WebSocket state
-  useEffect(() => {
-    if (preferWebSocket) {
-      if (connectionState === "connected") {
-        setConnectionMode("websocket");
-      } else if (
-        connectionState === "error" ||
-        connectionState === "disconnected"
-      ) {
-        setConnectionMode("polling");
-      }
-    }
-  }, [connectionState, preferWebSocket]);
+  const connectionMode: "websocket" | "polling" =
+    preferWebSocket && connectionState === "connected" ? "websocket" : "polling";
 
   return {
     session,
