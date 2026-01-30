@@ -486,7 +486,7 @@ export function MainSidebar({
             />
 
             {/* 项目列表 */}
-            <SidebarGroup className="py-2 overflow-hidden group-data-[collapsible=icon]:hidden">
+            <SidebarGroup className="pt-4 pb-2 overflow-hidden group-data-[collapsible=icon]:hidden border-t border-sidebar-border">
               <div className="group/projects-header relative flex items-center justify-between pr-2">
                 <SidebarGroupLabel className="text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
                   {t("sidebar.projects")}
