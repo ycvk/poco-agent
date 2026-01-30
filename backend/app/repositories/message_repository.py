@@ -56,3 +56,16 @@ class MessageRepository:
             .filter(AgentMessage.session_id == session_id)
             .count()
         )
+
+    @staticmethod
+    def get_after_id(
+        session_db: Session, session_id: uuid.UUID, after_id: int
+    ) -> list[AgentMessage]:
+        """Gets all messages after the specified message ID."""
+        return (
+            session_db.query(AgentMessage)
+            .filter(AgentMessage.session_id == session_id)
+            .filter(AgentMessage.id > after_id)
+            .order_by(AgentMessage.created_at.asc())
+            .all()
+        )
