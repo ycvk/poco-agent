@@ -4,7 +4,7 @@ import * as React from "react";
 import { ChatPanel } from "../execution/chat-panel/chat-panel";
 import { ArtifactsPanel } from "../execution/file-panel/artifacts-panel";
 import { MobileExecutionView } from "./mobile-execution-view";
-import { useExecutionSession } from "@/features/chat/hooks/use-execution-session";
+import { useHybridSession } from "@/features/chat/hooks/use-hybrid-session";
 import { useTaskHistoryContext } from "@/features/projects/contexts/task-history-context";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
@@ -21,11 +21,22 @@ interface ExecutionContainerProps {
 
 export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
   const { refreshTasks } = useTaskHistoryContext();
-  const { session, isLoading, error, updateSession } = useExecutionSession({
-    sessionId,
-    onPollingStop: refreshTasks,
-  });
+  const { session, isLoading, error, updateSession, connectionMode } =
+    useHybridSession({
+      sessionId,
+      onPollingStop: refreshTasks,
+    });
   const isMobile = useIsMobile();
+
+  // Log connection mode changes
+  React.useEffect(() => {
+    console.log(
+      `%c[Session] Connection mode: ${connectionMode}`,
+      connectionMode === "websocket"
+        ? "color: #22c55e; font-weight: bold;"
+        : "color: #f59e0b; font-weight: bold;",
+    );
+  }, [connectionMode]);
 
   // Loading state
   if (isLoading) {
