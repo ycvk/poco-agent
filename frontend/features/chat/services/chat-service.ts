@@ -663,4 +663,42 @@ export const chatService = {
       return [];
     }
   },
+
+  /**
+   * Get raw messages created after a specific message ID (for incremental fetch on reconnection).
+   * Returns raw message data matching the WebSocket WSMessageData format.
+   */
+  getMessagesSince: async (
+    sessionId: string,
+    afterId: number,
+  ): Promise<
+    Array<{
+      id: number;
+      role: string;
+      content: Record<string, unknown>;
+      timestamp: string | null;
+      text_preview: string | null;
+    }>
+  > => {
+    interface MessageResponse {
+      id: number;
+      session_id: string;
+      role: string;
+      content: Record<string, unknown>;
+      text_preview: string | null;
+      created_at: string | null;
+    }
+
+    const response = await apiClient.get<MessageResponse[]>(
+      `/messages/sessions/${sessionId}/since/${afterId}`,
+    );
+
+    return response.map((msg) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.created_at,
+      text_preview: msg.text_preview,
+    }));
+  },
 };

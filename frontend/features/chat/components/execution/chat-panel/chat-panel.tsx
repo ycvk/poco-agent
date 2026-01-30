@@ -13,6 +13,7 @@ import { PanelHeader } from "@/components/shared/panel-header";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { usePendingMessages } from "./hooks/use-pending-messages";
 import { useUserInputRequests } from "./hooks/use-user-input-requests";
+import { useSessionWebSocket } from "@/features/chat/hooks/use-session-websocket";
 import type {
   ExecutionSession,
   StatePatch,
@@ -62,7 +63,17 @@ export function ChatPanel({
     sendMessage,
     internalContextsByUserMessageId,
     runUsageByUserMessageId,
+    handleNewMessage,
+    handleReconnect,
   } = useChatMessages({ session });
+
+  // Connect WebSocket for real-time message updates
+  useSessionWebSocket({
+    sessionId: session?.session_id ?? null,
+    enabled: !!session?.session_id,
+    onNewMessage: handleNewMessage,
+    onReconnect: handleReconnect,
+  });
 
   // Pending message queue hook
   const {

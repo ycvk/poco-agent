@@ -5,6 +5,7 @@ import type {
   SessionStatusData,
   TodoUpdateData,
   WSEvent,
+  WSMessageData,
 } from "../types/websocket";
 import type { TodoItem } from "../types";
 
@@ -22,7 +23,12 @@ interface UseSessionWebSocketOptions {
   sessionId: string | null;
   onStatusChange?: (data: SessionStatusData) => void;
   onTodoUpdate?: (todos: TodoItem[]) => void;
+  /** @deprecated Use onNewMessage for typed message handling */
   onMessage?: (message: Record<string, unknown>) => void;
+  /** Called when a new message is received via WebSocket */
+  onNewMessage?: (message: WSMessageData) => void;
+  /** Called after successful reconnection - use to fetch missed messages */
+  onReconnect?: () => void;
   enabled?: boolean;
 }
 
@@ -37,6 +43,8 @@ export function useSessionWebSocket({
   onStatusChange,
   onTodoUpdate,
   onMessage,
+  onNewMessage,
+  onReconnect,
   enabled = true,
 }: UseSessionWebSocketOptions): UseSessionWebSocketReturn {
   const [connectionState, setConnectionState] =
@@ -47,6 +55,7 @@ export function useSessionWebSocket({
   const wsRef = useRef<WebSocket | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hadPreviousConnectionRef = useRef(false);
 
   const cleanup = useCallback(() => {
     if (heartbeatRef.current) {
@@ -76,6 +85,16 @@ export function useSessionWebSocket({
     ws.onopen = () => {
       console.log(`[WS] Connected to session ${sessionId}`);
       setConnectionState("connected");
+
+      // Call onReconnect if this is a reconnection (not first connection)
+      if (hadPreviousConnectionRef.current) {
+        console.log(
+          `[WS] Reconnected to session ${sessionId}, fetching missed messages`,
+        );
+        onReconnect?.();
+      }
+      hadPreviousConnectionRef.current = true;
+
       setReconnectAttempts(0);
 
       // Start heartbeat
@@ -103,9 +122,13 @@ export function useSessionWebSocket({
               (data.data as unknown as TodoUpdateData).todos as TodoItem[],
             );
             break;
-          case "message.new":
+          case "message.new": {
+            const messageData = data.data as unknown as WSMessageData;
+            onNewMessage?.(messageData);
+            // Also call deprecated onMessage for backward compatibility
             onMessage?.(data.data as Record<string, unknown>);
             break;
+          }
         }
       } catch (err) {
         console.error("[WS] Failed to parse message:", err);
@@ -137,6 +160,8 @@ export function useSessionWebSocket({
     onStatusChange,
     onTodoUpdate,
     onMessage,
+    onNewMessage,
+    onReconnect,
   ]);
 
   useEffect(() => {

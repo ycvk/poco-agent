@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { sendMessageAction } from "@/features/chat/actions/session-actions";
 import {
   getMessagesAction,
+  getMessagesSinceAction,
   getRunsBySessionAction,
 } from "@/features/chat/actions/query-actions";
 import type {
@@ -10,10 +11,10 @@ import type {
   InputFile,
   UsageResponse,
 } from "@/features/chat/types";
+import type { WSMessageData } from "@/features/chat/types/websocket";
 
 interface UseChatMessagesOptions {
   session: ExecutionSession | null;
-  pollingInterval?: number;
 }
 
 interface UseChatMessagesReturn {
@@ -25,22 +26,25 @@ interface UseChatMessagesReturn {
   sendMessage: (content: string, attachments?: InputFile[]) => Promise<void>;
   internalContextsByUserMessageId: Record<string, string[]>;
   runUsageByUserMessageId: Record<string, UsageResponse | null>;
+  /** Handle new message from WebSocket */
+  handleNewMessage: (message: WSMessageData) => void;
+  /** Handle reconnection - fetches messages since last known ID */
+  handleReconnect: () => Promise<void>;
 }
 
 /**
- * Manages chat message loading, polling, and optimistic updates
+ * Manages chat message loading and WebSocket-based real-time updates
  *
  * Responsibilities:
  * - Load message history when session changes
- * - Poll for new messages during active sessions
+ * - Handle new messages from WebSocket (via handleNewMessage)
+ * - Fetch missed messages on reconnection (via handleReconnect)
  * - Merge local optimistic messages with server messages
  * - Calculate display messages with streaming status
  * - Handle typing indicator state
  */
 export function useChatMessages({
   session,
-  pollingInterval = Number(process.env.NEXT_PUBLIC_MESSAGE_POLLING_INTERVAL) ||
-    3000,
 }: UseChatMessagesOptions): UseChatMessagesReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -53,6 +57,7 @@ export function useChatMessages({
 
   const lastLoadedSessionIdRef = useRef<string | null>(null);
   const realUserMessageIdsRef = useRef<number[] | null>(null);
+  const lastMessageIdRef = useRef<number>(0);
 
   const refreshRealUserMessageIds = useCallback(async () => {
     if (!session?.session_id) return;
@@ -198,7 +203,7 @@ export function useChatMessages({
     ],
   );
 
-  // Load and poll for messages
+  // Load initial messages (no polling - updates come from WebSocket)
   useEffect(() => {
     if (!session?.session_id) return;
 
@@ -210,6 +215,7 @@ export function useChatMessages({
       setInternalContextsByUserMessageId({});
       realUserMessageIdsRef.current = null;
       setRunUsageByUserMessageId({});
+      lastMessageIdRef.current = 0;
       lastLoadedSessionIdRef.current = session.session_id;
     }
 
@@ -221,9 +227,16 @@ export function useChatMessages({
         );
 
         setMessages((prev) => {
-          // If it's the first load (empty prev), just set it
-          // Otherwise merge
-          return mergeMessages(prev, history.messages);
+          const merged = mergeMessages(prev, history.messages);
+          // Update lastMessageIdRef with the highest server message ID
+          const maxId = merged.reduce((max, msg) => {
+            const numId = parseInt(msg.id, 10);
+            return !isNaN(numId) && numId > max ? numId : max;
+          }, 0);
+          if (maxId > lastMessageIdRef.current) {
+            lastMessageIdRef.current = maxId;
+          }
+          return merged;
         });
       } catch (error) {
         console.error("[Chat] Failed to load messages:", error);
@@ -235,32 +248,17 @@ export function useChatMessages({
     // Initial fetch
     fetchMessages();
 
-    // Setup polling
-    let interval: NodeJS.Timeout;
-
+    // Refresh run usage once the session becomes terminal
     const isTerminal = ["completed", "failed", "stopped"].includes(
       session.status,
     );
-
-    if (session.session_id && !isTerminal) {
-      interval = setInterval(fetchMessages, pollingInterval);
-    } else if (session.session_id && isTerminal) {
-      console.log(
-        `%c [Message Polling] Stopped for session ${session.session_id}`,
-        "color: #f59e0b; font-weight: bold;",
-      );
-      // Refresh run usage once the session becomes terminal so UI can display cost/tokens.
+    if (isTerminal) {
       void refreshRealUserMessageIds();
     }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
   }, [
     session?.session_id,
     session?.status,
     mergeMessages,
-    pollingInterval,
     fetchMessagesWithFilter,
     refreshRealUserMessageIds,
   ]);
@@ -300,6 +298,108 @@ export function useChatMessages({
     (isSessionActive &&
       (messages.length === 0 || messages[messages.length - 1].role === "user"));
 
+  /**
+   * Handle new message from WebSocket.
+   * Appends the message to the list if not already present.
+   */
+  const handleNewMessage = useCallback((message: WSMessageData) => {
+    // Skip if we already have this message
+    if (message.id <= lastMessageIdRef.current) {
+      return;
+    }
+
+    lastMessageIdRef.current = message.id;
+
+    // Convert WSMessageData to a simplified ChatMessage
+    // Note: The full message processing happens in getMessages, this is a preview
+    const textPreview = message.text_preview || "";
+    const newMessage: ChatMessage = {
+      id: message.id.toString(),
+      role: message.role as "user" | "assistant" | "system",
+      content: textPreview,
+      status: "completed",
+      timestamp: message.timestamp ?? undefined,
+    };
+
+    setMessages((prev) => {
+      // Check if already exists
+      if (prev.some((m) => m.id === newMessage.id)) {
+        return prev;
+      }
+      return [...prev, newMessage];
+    });
+
+    // Reset typing indicator when we receive an assistant message
+    if (message.role === "assistant") {
+      setIsTyping(false);
+    }
+  }, []);
+
+  /**
+   * Handle WebSocket reconnection.
+   * Fetches messages since the last known ID to catch up on missed messages.
+   */
+  const handleReconnect = useCallback(async () => {
+    if (!session?.session_id) return;
+
+    const afterId = lastMessageIdRef.current;
+    if (afterId <= 0) {
+      // No messages yet, do a full fetch instead
+      const history = await fetchMessagesWithFilter(session.session_id);
+      setInternalContextsByUserMessageId(
+        history.internalContextsByUserMessageId,
+      );
+      setMessages((prev) => {
+        const merged = mergeMessages(prev, history.messages);
+        const maxId = merged.reduce((max, msg) => {
+          const numId = parseInt(msg.id, 10);
+          return !isNaN(numId) && numId > max ? numId : max;
+        }, 0);
+        if (maxId > lastMessageIdRef.current) {
+          lastMessageIdRef.current = maxId;
+        }
+        return merged;
+      });
+      return;
+    }
+
+    try {
+      console.log(
+        `[Chat] Fetching messages since ID ${afterId} after reconnection`,
+      );
+      const missedMessages = await getMessagesSinceAction({
+        sessionId: session.session_id,
+        afterId,
+      });
+
+      if (missedMessages.length > 0) {
+        console.log(
+          `[Chat] Found ${missedMessages.length} missed messages after reconnection`,
+        );
+        // Process each missed message
+        missedMessages.forEach((msg) => {
+          handleNewMessage(msg);
+        });
+      }
+    } catch (error) {
+      console.error(
+        "[Chat] Failed to fetch messages after reconnection:",
+        error,
+      );
+      // Fall back to full fetch on error
+      const history = await fetchMessagesWithFilter(session.session_id);
+      setInternalContextsByUserMessageId(
+        history.internalContextsByUserMessageId,
+      );
+      setMessages((prev) => mergeMessages(prev, history.messages));
+    }
+  }, [
+    session?.session_id,
+    fetchMessagesWithFilter,
+    mergeMessages,
+    handleNewMessage,
+  ]);
+
   return {
     messages,
     displayMessages,
@@ -309,5 +409,7 @@ export function useChatMessages({
     sendMessage,
     internalContextsByUserMessageId,
     runUsageByUserMessageId,
+    handleNewMessage,
+    handleReconnect,
   };
 }
