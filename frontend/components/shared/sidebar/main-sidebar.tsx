@@ -21,7 +21,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  pointerWithin,
   useDroppable,
 } from "@dnd-kit/core";
 
@@ -366,7 +366,7 @@ export function MainSidebar({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={pointerWithin}
       onDragEnd={handleDragEnd}
     >
       <Sidebar
