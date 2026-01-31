@@ -18,7 +18,7 @@ export function QuickActions({ onPick }: { onPick: (prompt: string) => void }) {
           type="button"
           variant="ghost"
           size="sm"
-          className="h-8 rounded-full border border-border bg-card px-3 text-sm text-muted-foreground shadow-sm transition-all hover:bg-accent hover:text-foreground hover:shadow"
+          className="h-8 rounded-full border border-border/70 bg-background px-3 text-sm text-muted-foreground shadow-2xs transition-all hover:border-border hover:bg-muted/20 hover:text-foreground hover:shadow-sm active:scale-[0.98]"
           onClick={() => onPick(t(labelKey))}
         >
           <Icon className="mr-1.5 size-3.5" />

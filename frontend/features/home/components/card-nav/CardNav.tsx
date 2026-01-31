@@ -22,6 +22,7 @@ import { skillsService } from "@/features/skills/services/skills-service";
 import type { McpServer, UserMcpInstall } from "@/features/mcp/types";
 import { Skill, UserSkillInstall } from "@/features/skills/types";
 import { useAppShell } from "@/components/shared/app-shell-context";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { playMcpInstallSound } from "@/lib/utils/sound";
 
@@ -44,12 +45,14 @@ interface InstalledItem {
  * An expandable card that shows MCP, Skill, and App sections on hover
  */
 export function CardNav({
-  triggerText = "将您的工具连接到 Poco",
+  triggerText,
   className = "",
   forceExpanded = false,
 }: CardNavProps) {
+  const { t } = useT("translation");
   const router = useRouter();
   const { lng } = useAppShell();
+  const resolvedTriggerText = triggerText ?? t("hero.tools");
   const [isExpanded, setIsExpanded] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -96,7 +99,9 @@ export function CardNav({
     const server = mcpServers.find((s) => s.id === install.server_id);
     return {
       id: install.server_id,
-      name: server?.name || `MCP #${install.server_id}`,
+      name:
+        server?.name ||
+        t("hero.toolsPanel.unknownMcp", { id: String(install.server_id) }),
       enabled: install.enabled,
       installId: install.id,
     };
@@ -107,7 +112,9 @@ export function CardNav({
     const skill = skills.find((s) => s.id === install.skill_id);
     return {
       id: install.skill_id,
-      name: skill?.name || `Skill #${install.skill_id}`,
+      name:
+        skill?.name ||
+        t("hero.toolsPanel.unknownSkill", { id: String(install.skill_id) }),
       enabled: install.enabled,
       installId: install.id,
     };
@@ -264,7 +271,7 @@ export function CardNav({
       return (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
-          <span>同步中...</span>
+          <span>{t("common.syncing")}</span>
         </div>
       );
     }
@@ -302,7 +309,7 @@ export function CardNav({
               className={cn(
                 "w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0",
                 item.enabled
-                  ? "bg-primary shadow-[0_0_6px_-1px_hsl(var(--primary)/0.6)] scale-100"
+                  ? "bg-primary ring-2 ring-primary/20 scale-100"
                   : "bg-muted-foreground/30 scale-90 group-hover/item:bg-muted-foreground/50",
               )}
             />
@@ -320,37 +327,36 @@ export function CardNav({
       <nav
         ref={navRef}
         className={cn(
-          "relative rounded-xl border border-border bg-card/50 overflow-hidden transition-all duration-[0.4s] ease-[cubic-bezier(0.23,1,0.32,1)] backdrop-blur-md",
-          "hover:shadow-[0_12px_40px_-12px_rgba(var(--foreground),0.15)] hover:bg-card/80",
-          isExpanded &&
-            "shadow-[0_12px_40px_-12px_rgba(var(--foreground),0.15)] bg-card/80",
+          "relative overflow-hidden rounded-2xl border border-border/70 bg-card transition-colors duration-200",
+          "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-highlight/45 before:to-transparent",
+          isExpanded ? "shadow-sm" : "hover:bg-muted/10",
         )}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         {/* Entry Bar */}
-        <div className="group flex items-center gap-3 p-3.5 cursor-pointer">
+        <div className="group flex cursor-pointer items-center gap-3 p-4">
           <Plug
             className={cn(
               "size-5 flex-shrink-0 text-muted-foreground transition-all duration-300",
-              isExpanded && "rotate-12",
+              isExpanded && "text-foreground",
             )}
           />
           <span className="text-sm font-medium text-muted-foreground transition-colors duration-300">
-            {triggerText}
+            {resolvedTriggerText}
           </span>
         </div>
 
         {/* Modular Content */}
         <div ref={contentRef} className="overflow-hidden">
-          <div className="grid grid-cols-3 gap-4 p-4 border-t border-border/50 max-[900px]:grid-cols-1">
+          <div className="grid grid-cols-3 gap-4 border-t border-border/50 p-4 max-[900px]:grid-cols-1">
             {/* MCP Card */}
             <div
               ref={setCardRef(0)}
-              className="group relative flex flex-col p-5 rounded-lg border bg-muted/30 border-border/50 hover:-translate-y-0.5 hover:bg-muted/40 hover:shadow-[0_4px_12px_-2px_rgba(var(--foreground),0.05)] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] min-h-[140px]"
+              className="group relative flex min-h-[140px] flex-col rounded-xl border border-border/70 bg-background p-5 transition-all duration-300 hover:border-border hover:bg-muted/20 hover:shadow-sm"
             >
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="flex items-center justify-center size-9 rounded-md bg-muted text-muted-foreground transition-all duration-300">
+                <div className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground transition-all duration-300">
                   <Server className="size-[1.125rem]" />
                 </div>
                 <button
@@ -361,19 +367,19 @@ export function CardNav({
                   <span className="text-base font-semibold tracking-[-0.01em] text-foreground">
                     MCP
                   </span>
-                  <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 hover:translate-x-0.5" />
+                  <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
               </div>
-              {renderItemBadges(installedMcps, "未安装 MCP", "mcp")}
+              {renderItemBadges(installedMcps, t("hero.toolsPanel.emptyMcp"), "mcp")}
             </div>
 
             {/* Skill Card */}
             <div
               ref={setCardRef(1)}
-              className="group relative flex flex-col p-5 rounded-lg border bg-muted/30 border-border/50 hover:-translate-y-0.5 hover:bg-muted/40 hover:shadow-[0_4px_12px_-2px_rgba(var(--foreground),0.05)] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] min-h-[140px]"
+              className="group relative flex min-h-[140px] flex-col rounded-xl border border-border/70 bg-background p-5 transition-all duration-300 hover:border-border hover:bg-muted/20 hover:shadow-sm"
             >
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="flex items-center justify-center size-9 rounded-md bg-muted text-muted-foreground transition-all duration-300">
+                <div className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground transition-all duration-300">
                   <Sparkles className="size-[1.125rem]" />
                 </div>
                 <button
@@ -384,24 +390,24 @@ export function CardNav({
                   <span className="text-base font-semibold tracking-[-0.01em] text-foreground">
                     Skills
                   </span>
-                  <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 hover:translate-x-0.5" />
+                  <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
               </div>
-              {renderItemBadges(installedSkills, "未安装技能", "skill")}
+              {renderItemBadges(installedSkills, t("hero.toolsPanel.emptySkills"), "skill")}
             </div>
 
             {/* App Card */}
-            <div className="group relative flex flex-col p-5 rounded-lg border bg-muted/30 border-border/50 hover:-translate-y-0.5 hover:bg-muted/40 hover:shadow-[0_4px_12px_-2px_rgba(var(--foreground),0.05)] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] min-h-[140px]">
+            <div className="group relative flex min-h-[140px] flex-col rounded-xl border border-border/70 bg-background p-5 transition-all duration-300 hover:border-border hover:bg-muted/20 hover:shadow-sm">
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="flex items-center justify-center size-9 rounded-md bg-muted text-muted-foreground transition-all duration-300">
+                <div className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground transition-all duration-300">
                   <AppWindow className="size-[1.125rem]" />
                 </div>
                 <span className="text-base font-semibold tracking-[-0.01em] text-foreground">
-                  应用
+                  {t("hero.toolsPanel.apps")}
                 </span>
               </div>
               <span className="text-xs italic text-muted-foreground">
-                即将推出
+                {t("hero.comingSoon")}
               </span>
             </div>
           </div>

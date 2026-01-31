@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CardNav } from "./card-nav/CardNav";
 import { ConnectorsDialog } from "./connectors/connectors-dialog";
 import type { ConnectorType } from "../model/connectors";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Connectors Bar Entry Component
@@ -22,14 +23,12 @@ export function ConnectorsBar({
   defaultTab = "app",
   forceExpanded = false,
 }: ConnectorsBarProps = {}) {
+  const { t } = useT("translation");
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="mt-4 w-full">
-      <CardNav
-        triggerText="将您的工具连接到 Poco"
-        forceExpanded={forceExpanded}
-      />
+      <CardNav triggerText={t("hero.tools")} forceExpanded={forceExpanded} />
       {showDialog && (
         <ConnectorsDialog
           open={isOpen}

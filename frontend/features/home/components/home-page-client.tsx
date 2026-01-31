@@ -10,6 +10,8 @@ import { useAutosizeTextarea } from "../hooks/use-autosize-textarea";
 import { HomeHeader } from "./home-header";
 import { TaskComposer } from "./task-composer";
 import { ConnectorsBar } from "./connectors-bar";
+import { KeyboardHints } from "./keyboard-hints";
+import { QuickActions } from "./quick-actions";
 import { createSessionAction } from "@/features/chat/actions/session-actions";
 import type { ComposerMode, TaskSendOptions } from "./task-composer";
 
@@ -132,30 +134,44 @@ export function HomePageClient() {
     <>
       <HomeHeader onOpenSettings={openSettings} />
 
-      <div className="flex flex-1 flex-col items-center justify-start px-6 pt-[20vh]">
-        <div className="w-full max-w-2xl">
-          {/* 欢迎语 */}
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-medium tracking-tight text-foreground">
-              {t("hero.title")}
-            </h1>
+      <div className="flex flex-1 overflow-hidden">
+        <div className="mx-auto flex w-full max-w-6xl flex-col px-6 pb-12 pt-10">
+          <div className="grid gap-10 lg:grid-cols-[1.05fr_1.45fr] lg:items-start">
+            <div className="pt-1">
+              <h1 className="font-display text-3xl font-semibold leading-[1.05] tracking-tight text-foreground md:text-5xl">
+                {t("hero.title")}
+              </h1>
+              <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-muted-foreground/80 md:text-base">
+                {t("hero.subtitle")}
+              </p>
+              <QuickActions
+                onPick={(prompt) => {
+                  setInputValue(prompt);
+                  requestAnimationFrame(() => textareaRef.current?.focus());
+                }}
+              />
+            </div>
+
+            <div className="w-full">
+              <TaskComposer
+                textareaRef={textareaRef}
+                value={inputValue}
+                onChange={setInputValue}
+                mode={mode}
+                onModeChange={setMode}
+                onSend={handleSendTask}
+                isSubmitting={isSubmitting}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
+              />
+
+              <KeyboardHints />
+
+              <ConnectorsBar
+                forceExpanded={shouldExpandConnectors && mode !== "scheduled"}
+              />
+            </div>
           </div>
-
-          <TaskComposer
-            textareaRef={textareaRef}
-            value={inputValue}
-            onChange={setInputValue}
-            mode={mode}
-            onModeChange={setMode}
-            onSend={handleSendTask}
-            isSubmitting={isSubmitting}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
-          />
-
-          <ConnectorsBar
-            forceExpanded={shouldExpandConnectors && mode !== "scheduled"}
-          />
         </div>
       </div>
     </>

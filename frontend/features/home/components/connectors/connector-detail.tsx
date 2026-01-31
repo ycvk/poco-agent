@@ -34,7 +34,7 @@ export function ConnectorDetail({ connector, onBack }: ConnectorDetailProps) {
   return (
     <div className="flex-1 flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-300">
       {/* Header with Back */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-10">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"

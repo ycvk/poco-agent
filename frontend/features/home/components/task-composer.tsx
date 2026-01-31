@@ -288,7 +288,7 @@ export function TaskComposer({
   ]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-colors focus-within:border-ring/50 focus-within:ring-8 focus-within:ring-ring/10 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-highlight/55 before:to-transparent">
       <input
         type="file"
         ref={fileInputRef}
@@ -386,7 +386,7 @@ export function TaskComposer({
         }}
       />
 
-      {/* 输入区域 */}
+      {/* Input */}
       <div className="relative px-4 pb-3 pt-4">
         {slashAutocomplete.isOpen ? (
           <div className="absolute bottom-full left-0 mb-2 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-md">
@@ -545,11 +545,11 @@ export function TaskComposer({
         </div>
       ) : null}
 
-      {/* 底部工具栏 */}
-      <div className="flex items-center justify-between px-3 pb-3">
-        {/* 左侧：模式选择（Icon + Hover Label） */}
+      {/* Footer toolbar */}
+      <div className="flex items-center justify-between border-t border-border/60 bg-muted/10 px-3 py-3">
+        {/* Left: mode selector */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-2xl border border-border bg-muted/20 p-1 min-w-40">
+          <div className="flex items-center gap-1 rounded-xl border border-border/70 bg-muted/15 p-1 min-w-40">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -651,7 +651,7 @@ export function TaskComposer({
           </div>
         </div>
 
-        {/* 右侧操作按钮 */}
+        {/* Right: actions */}
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
