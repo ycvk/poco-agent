@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AssistantMessage } from "./messages/assistant-message";
 import { UserMessage } from "./messages/user-message";
-import type { ChatMessage, UsageResponse } from "@/features/chat/types";
+import type {
+  ChatMessage,
+  UsageResponse,
+  FileChange,
+} from "@/features/chat/types";
 import { useT } from "@/lib/i18n/client";
 
 export interface ChatMessageListProps {
@@ -16,6 +20,8 @@ export interface ChatMessageListProps {
   runUsageByUserMessageId?: Record<string, UsageResponse | null>;
   /** Whether this is the initial load of history messages. Used to disable animations. */
   isInitialLoad?: boolean;
+  /** File changes to display on the last assistant message */
+  fileChanges?: FileChange[];
 }
 
 export function ChatMessageList({
@@ -24,6 +30,7 @@ export function ChatMessageList({
   internalContextsByUserMessageId,
   runUsageByUserMessageId,
   isInitialLoad = false,
+  fileChanges,
 }: ChatMessageListProps) {
   const { t } = useT("translation");
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -180,6 +187,11 @@ export function ChatMessageList({
     return map;
   }, [messages]);
 
+  // Find the index of the last assistant message
+  const lastAssistantMessageIndex = React.useMemo(() => {
+    return messages.findLastIndex((m) => m.role === "assistant");
+  }, [messages]);
+
   if (messages.length === 0 && !isTyping) {
     return null;
   }
@@ -277,6 +289,9 @@ export function ChatMessageList({
                 message={message}
                 runUsage={runUsage}
                 animate={shouldAnimateRef.current}
+                fileChanges={
+                  index === lastAssistantMessageIndex ? fileChanges : undefined
+                }
               />
             );
           })}
