@@ -243,6 +243,7 @@
   },
   "fileChanges": {
     "title": "文件更改",
+    "moreFiles": "更多文件",
     "noChanges": "暂无文件更改",
     "lines": "行",
     "files": "个文件",

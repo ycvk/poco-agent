@@ -243,6 +243,7 @@
   },
   "fileChanges": {
     "title": "File Changes",
+    "moreFiles": "more files",
     "noChanges": "No file changes yet",
     "lines": "lines",
     "files": "files",
