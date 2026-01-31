@@ -74,7 +74,9 @@ export function PendingMessageList({
                       </span>
                       {msg.attachments && msg.attachments.length > 0 && (
                         <span className="text-xs text-muted-foreground">
-                          [+{msg.attachments.length} 文件]
+                          {t("pending.attachmentsCount", {
+                            count: msg.attachments.length,
+                          })}
                         </span>
                       )}
                     </div>

@@ -133,16 +133,16 @@ export function UserInputRequestCard({
   const handleSubmit = async () => {
     const answers = buildAnswers();
     if (!answers) {
-      toast.error(t("chat.askUserRequired", "请回答所有问题后再提交"));
+      toast.error(t("chat.askUserRequired"));
       return;
     }
     try {
       await onSubmit(answers);
-      toast.success(t("chat.askUserSubmitted", "已提交答案"));
+      toast.success(t("chat.askUserSubmitted"));
       playTaskCompleteSound();
     } catch (error) {
       console.error("Submit AskUserQuestion failed:", error);
-      toast.error(t("chat.askUserFailed", "提交失败，请重试"));
+      toast.error(t("chat.askUserFailed"));
     }
   };
 
@@ -168,9 +168,7 @@ export function UserInputRequestCard({
               secondsLeft <= 10 ? "text-destructive" : "text-muted-foreground",
             )}
           >
-            {t("chat.askUserTimeout", "剩余 {{seconds}} 秒", {
-              seconds: secondsLeft,
-            })}
+            {t("chat.askUserTimeout", { seconds: secondsLeft })}
           </div>
         )}
       </div>
@@ -224,7 +222,7 @@ export function UserInputRequestCard({
                   />
                   <div className="flex-1">
                     <div className="text-foreground">
-                      {t("chat.askUserOtherOption", "其他")}
+                      {t("chat.askUserOtherOption")}
                     </div>
                     {isOtherSelected(currentQuestion) && (
                       <Input
@@ -235,10 +233,7 @@ export function UserInputRequestCard({
                         onChange={(e) =>
                           setOtherText(currentQuestion.question, e.target.value)
                         }
-                        placeholder={t(
-                          "chat.askUserOtherPlaceholder",
-                          "请输入具体内容",
-                        )}
+                        placeholder={t("chat.askUserOtherPlaceholder")}
                         className="mt-2"
                         onClick={(e) => e.stopPropagation()}
                         autoFocus
@@ -285,7 +280,7 @@ export function UserInputRequestCard({
                   <RadioGroupItem value="other" className="mt-0.5" />
                   <div className="flex-1">
                     <div className="text-foreground">
-                      {t("chat.askUserOtherOption", "其他")}
+                      {t("chat.askUserOtherOption")}
                     </div>
                     {isOtherSelected(currentQuestion) && (
                       <Input
@@ -296,10 +291,7 @@ export function UserInputRequestCard({
                         onChange={(e) =>
                           setOtherText(currentQuestion.question, e.target.value)
                         }
-                        placeholder={t(
-                          "chat.askUserOtherPlaceholder",
-                          "请输入具体内容",
-                        )}
+                        placeholder={t("chat.askUserOtherPlaceholder")}
                         className="mt-2"
                         onClick={(e) => e.stopPropagation()}
                         autoFocus
@@ -320,7 +312,7 @@ export function UserInputRequestCard({
             onClick={handleSubmit}
             disabled={isSubmitting || !allAnswered}
           >
-            {t("chat.askUserSubmit", "提交")}
+            {t("chat.askUserSubmit")}
           </Button>
         </div>
       ) : (
@@ -332,7 +324,7 @@ export function UserInputRequestCard({
             disabled={currentIndex === 0}
           >
             <ChevronLeft className="h-4 w-4" />
-            {t("chat.askUserPrevious", "上一题")}
+            {t("chat.askUserPrevious")}
           </Button>
 
           <div className="flex items-center gap-1">
@@ -346,9 +338,7 @@ export function UserInputRequestCard({
                     ? "w-6 bg-primary"
                     : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50",
                 )}
-                aria-label={t("chat.askUserGoTo", "第 {{index}} 题", {
-                  index: idx + 1,
-                })}
+                aria-label={t("chat.askUserGoTo", { index: idx + 1 })}
               />
             ))}
           </div>
@@ -359,11 +349,11 @@ export function UserInputRequestCard({
               onClick={handleSubmit}
               disabled={isSubmitting || !allAnswered}
             >
-              {t("chat.askUserSubmit", "提交")}
+              {t("chat.askUserSubmit")}
             </Button>
           ) : (
             <Button variant="outline" size="sm" onClick={goToNext}>
-              {t("chat.askUserNext", "下一题")}
+              {t("chat.askUserNext")}
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}

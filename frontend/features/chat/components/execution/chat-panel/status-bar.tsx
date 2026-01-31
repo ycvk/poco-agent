@@ -18,6 +18,7 @@ import type {
   McpStatusItem,
   ConfigSnapshot,
 } from "@/features/chat/types";
+import { useT } from "@/lib/i18n/client";
 
 interface StatusBarProps {
   // Runtime execution data (deprecated, now using configSnapshot)
@@ -32,6 +33,7 @@ export function StatusBar({
   mcpStatuses = [],
   configSnapshot,
 }: StatusBarProps) {
+  const { t } = useT("translation");
   const [mcpServers, setMcpServers] = React.useState<McpServer[]>([]);
   const [allSkills, setAllSkills] = React.useState<Skill[]>([]);
 
@@ -134,7 +136,9 @@ export function StatusBar({
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border/60 hover:border-border hover:shadow-sm transition-all cursor-pointer group">
                 <Zap className="size-3.5 text-foreground group-hover:text-foreground/80 transition-colors" />
                 <span className="text-xs font-medium text-foreground">
-                  {configuredSkills.length > 0 ? "技能配置" : "技能使用"}
+                  {configuredSkills.length > 0
+                    ? t("chat.statusBar.skillsConfigured")
+                    : t("chat.statusBar.skillsUsed")}
                 </span>
                 <Badge
                   variant="secondary"
@@ -172,8 +176,8 @@ export function StatusBar({
                 <Server className="size-3.5 text-foreground group-hover:text-foreground/80 transition-colors" />
                 <span className="text-xs font-medium text-foreground">
                   {configuredMcpServers.length > 0
-                    ? "MCP 服务器配置"
-                    : "MCP 服务器"}
+                    ? t("chat.statusBar.mcpConfigured")
+                    : t("chat.statusBar.mcpServers")}
                 </span>
                 <Badge
                   variant="secondary"
