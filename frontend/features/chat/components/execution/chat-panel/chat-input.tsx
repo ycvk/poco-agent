@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { SendHorizontal, Plus, Loader2 } from "lucide-react";
+import { SendHorizontal, Plus, Loader2, Pause } from "lucide-react";
 import { uploadAttachment } from "@/features/attachments/services/attachment-service";
 import type { InputFile } from "@/features/chat/types";
 import { toast } from "sonner";
@@ -16,6 +16,9 @@ import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   onSend: (content: string, attachments?: InputFile[]) => void;
+  onCancel?: () => void;
+  canCancel?: boolean;
+  isCancelling?: boolean;
   disabled?: boolean;
 }
 
@@ -24,7 +27,13 @@ const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 /**
  * Chat input component with send button
  */
-export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  onCancel,
+  canCancel = false,
+  isCancelling = false,
+  disabled = false,
+}: ChatInputProps) {
   const { t } = useT("translation");
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<InputFile[]>([]);
@@ -116,6 +125,9 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const hasDraft = value.trim().length > 0 || attachments.length > 0;
+  const showCancel = Boolean(onCancel) && canCancel && !hasDraft;
 
   return (
     <div className="shrink-0 px-4 pb-4 pt-2">
@@ -224,13 +236,33 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
             target.style.height = `${Math.min(target.scrollHeight, 160)}px`;
           }}
         />
-        <button
-          onClick={handleSend}
-          disabled={(!value.trim() && attachments.length === 0) || disabled}
-          className="flex-shrink-0 flex items-center justify-center size-8 rounded-md bg-foreground text-background hover:bg-foreground/90 disabled:bg-muted disabled:text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <SendHorizontal className="size-4" />
-        </button>
+        {showCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isCancelling}
+            className="flex-shrink-0 flex items-center justify-center size-8 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label={t("chat.cancelTask", "取消任务")}
+            title={t("chat.cancelTask", "取消任务")}
+          >
+            {isCancelling ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Pause className="size-4" />
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!hasDraft || disabled}
+            className="flex-shrink-0 flex items-center justify-center size-8 rounded-md bg-foreground text-background hover:bg-foreground/90 disabled:bg-muted disabled:text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label={t("hero.send")}
+            title={t("hero.send")}
+          >
+            <SendHorizontal className="size-4" />
+          </button>
+        )}
       </div>
     </div>
   );

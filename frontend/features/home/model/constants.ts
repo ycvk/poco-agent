@@ -11,7 +11,7 @@ import type { ModelInfo } from "@/types";
 import type { ConnectedTool } from "@/features/home/types";
 import type { MessageStatus } from "@/features/chat/types";
 
-type TaskStatus = "pending" | "running" | "completed" | "failed";
+type TaskStatus = "pending" | "running" | "completed" | "failed" | "canceled";
 
 export type QuickAction = {
   id: string;
@@ -46,6 +46,10 @@ export const TASK_STATUS_META: Record<
   running: { dotClassName: "bg-info", labelKey: "status.running" },
   completed: { dotClassName: "bg-success", labelKey: "status.completed" },
   failed: { dotClassName: "bg-destructive", labelKey: "status.failed" },
+  canceled: {
+    dotClassName: "bg-muted-foreground/60",
+    labelKey: "status.canceled",
+  },
 };
 
 // Chat-related constants

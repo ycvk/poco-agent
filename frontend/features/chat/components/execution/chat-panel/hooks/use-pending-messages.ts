@@ -40,6 +40,7 @@ export function usePendingMessages({
   // Determine if session is running/active
   const isSessionActive =
     session?.status === "running" || session?.status === "accepted";
+  const isSessionCanceled = session?.status === "canceled";
 
   // Reset auto-send lock when session becomes active
   useEffect(() => {
@@ -88,6 +89,7 @@ export function usePendingMessages({
       // Only send if session is NOT active AND we are NOT currently sending
       if (
         !isSessionActive &&
+        !isSessionCanceled &&
         pendingMessages.length > 0 &&
         !isProcessingRef.current
       ) {
@@ -107,7 +109,7 @@ export function usePendingMessages({
       }
     };
     autoSend();
-  }, [isSessionActive, pendingMessages, sendMessage]);
+  }, [isSessionActive, isSessionCanceled, pendingMessages, sendMessage]);
 
   return {
     pendingMessages,

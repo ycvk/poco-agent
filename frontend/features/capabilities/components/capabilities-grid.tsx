@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import {
   Puzzle,
   Server,
-  Clock,
   Sparkles,
   Key,
   Command as CommandIcon,
@@ -101,20 +100,6 @@ export function CapabilitiesGrid() {
         ],
         actionLabel: t("library.slashCommands.card.action", "管理命令"),
         actionHref: "/capabilities/slash-commands",
-        comingSoon: false,
-      },
-      {
-        id: "scheduled-tasks",
-        icon: <Clock className="size-6" />,
-        title: t("library.scheduledTasks.title"),
-        description: t("library.scheduledTasks.description"),
-        features: [
-          t("library.scheduledTasks.feature1"),
-          t("library.scheduledTasks.feature2"),
-          t("library.scheduledTasks.feature3"),
-        ],
-        actionLabel: t("library.scheduledTasks.action"),
-        actionHref: "/capabilities/scheduled-tasks",
         comingSoon: false,
       },
       {

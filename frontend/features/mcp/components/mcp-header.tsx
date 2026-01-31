@@ -6,13 +6,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useT } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { useAppShell } from "@/components/shared/app-shell-context";
+import { HeaderSearchInput } from "@/components/shared/header-search-input";
 
 interface McpHeaderProps {
   onOpenSettings?: () => void;
   onAddMcp?: () => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 }
 
-export function McpHeader({ onAddMcp }: McpHeaderProps) {
+export function McpHeader({
+  onAddMcp,
+  searchQuery,
+  onSearchChange,
+}: McpHeaderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useT("translation");
@@ -39,6 +46,14 @@ export function McpHeader({ onAddMcp }: McpHeaderProps) {
 
       {/* Right: Action Buttons */}
       <div className="flex items-center gap-2">
+        <HeaderSearchInput
+          value={searchQuery}
+          onChange={onSearchChange}
+          placeholder={t(
+            "library.mcpLibrary.searchPlaceholder",
+            "搜索服务器...",
+          )}
+        />
         <Button variant="ghost" size="sm" className="gap-2" onClick={onAddMcp}>
           <Plus className="size-4" />
           {t("library.mcpLibrary.header.add", "添加MCP")}

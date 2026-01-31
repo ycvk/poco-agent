@@ -12,16 +12,24 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
+  Clock,
   Trash2,
   X,
+  ChevronRight,
+  ListFilter,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DndContext,
   DragEndEvent,
   PointerSensor,
   useSensor,
   useSensors,
-  pointerWithin,
+  closestCorners,
   useDroppable,
 } from "@dnd-kit/core";
 
@@ -29,7 +37,6 @@ import { useT } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -57,6 +64,12 @@ const TOP_NAV_ITEMS = [
     labelKey: "sidebar.library",
     icon: Sparkles,
     href: "/capabilities",
+  },
+  {
+    id: "scheduled-tasks",
+    labelKey: "sidebar.scheduledTasks",
+    icon: Clock,
+    href: "/capabilities/scheduled-tasks",
   },
 ] as const;
 
@@ -92,35 +105,57 @@ function DroppableAllTasksGroup({
   });
 
   return (
-    <SidebarGroup
-      ref={setNodeRef}
-      className={cn(
-        "py-2 overflow-hidden group-data-[collapsible=icon]:hidden transition-colors rounded-lg",
-        isOver && "bg-primary/10",
-      )}
+    <Collapsible
+      defaultOpen
+      className="group/collapsible-tasks flex flex-col h-full min-h-0"
     >
-      <SidebarGroupLabel className="text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
-        {title}
-      </SidebarGroupLabel>
-      <SidebarGroupContent className="mt-1 group-data-[collapsible=icon]:mt-0">
-        <TaskHistoryList
-          tasks={tasks}
-          onDeleteTask={onDeleteTask}
-          onRenameTask={onRenameTask}
-          onMoveTaskToProject={onMoveTaskToProject}
-          projects={projects}
-          isSelectionMode={isSelectionMode}
-          selectedTaskIds={selectedTaskIds}
-          onToggleTaskSelection={onToggleTaskSelection}
-          onEnableSelectionMode={onEnableSelectionMode}
-        />
-        {isOver && (
-          <div className="flex items-center justify-center p-2 text-xs text-primary bg-primary/5 rounded border border-dashed border-primary/20 mt-1">
-            {t("sidebar.removeFromProject")}
-          </div>
+      <SidebarGroup
+        ref={setNodeRef}
+        className={cn(
+          "p-0 flex flex-col h-full min-h-0 transition-colors rounded-lg overflow-hidden",
+          isOver && "bg-primary/10",
         )}
-      </SidebarGroupContent>
-    </SidebarGroup>
+      >
+        <div className="group/tasks-header relative flex items-center justify-between p-2 shrink-0">
+          <SidebarGroupLabel asChild>
+            <CollapsibleTrigger className="flex flex-1 items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer">
+              {title}
+              <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]/collapsible-tasks:rotate-90" />
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative z-10 size-5 flex items-center justify-center text-muted-foreground hover:bg-sidebar-accent"
+            title={t("sidebar.filter") || "Filter"}
+          >
+            <ListFilter className="size-3.5" />
+          </Button>
+        </div>
+        <CollapsibleContent className="flex-1 min-h-0 data-[state=closed]:flex-none">
+          <ScrollArea className="h-full">
+            <SidebarGroupContent className="p-2 pt-0 mt-0 group-data-[collapsible=icon]:mt-0">
+              <TaskHistoryList
+                tasks={tasks}
+                onDeleteTask={onDeleteTask}
+                onRenameTask={onRenameTask}
+                onMoveTaskToProject={onMoveTaskToProject}
+                projects={projects}
+                isSelectionMode={isSelectionMode}
+                selectedTaskIds={selectedTaskIds}
+                onToggleTaskSelection={onToggleTaskSelection}
+                onEnableSelectionMode={onEnableSelectionMode}
+              />
+              {isOver && (
+                <div className="flex items-center justify-center p-2 text-xs text-primary bg-primary/5 rounded border border-dashed border-primary/20 mt-1">
+                  {t("sidebar.removeFromProject")}
+                </div>
+              )}
+            </SidebarGroupContent>
+          </ScrollArea>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
   );
 }
 
@@ -168,7 +203,7 @@ export function MainSidebar({
     Set<string>
   >(new Set());
 
-  // Manage each project's expanded/collapsed state
+  // 管理每个项目的折叠状态
   const [expandedProjects, setExpandedProjects] = React.useState<Set<string>>(
     new Set(),
   );
@@ -191,13 +226,13 @@ export function MainSidebar({
     }
   }, [params?.id, taskHistory]);
 
-  // Unassigned tasks (not grouped into a project)
+  // 过滤出未归类到项目的任务
   const unassignedTasks = React.useMemo(
     () => taskHistory.filter((task) => !task.projectId),
     [taskHistory],
   );
 
-  // Group tasks by project
+  // 按项目分组任务
   const tasksByProject = React.useMemo(() => {
     const grouped = new Map<string, TaskHistoryItem[]>();
     taskHistory.forEach((task) => {
@@ -367,18 +402,21 @@ export function MainSidebar({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={pointerWithin}
+      collisionDetection={closestCorners}
       onDragEnd={handleDragEnd}
     >
-      <Sidebar variant="floating" collapsible="icon" className="overflow-hidden">
+      <Sidebar
+        collapsible="icon"
+        className="border-r-0 bg-sidebar overflow-hidden"
+      >
         <SidebarHeader className="gap-2 pb-2">
-          {/* Brand + collapse toggle */}
+          {/* Logo 和折叠按钮 */}
           <div className="mb-3 flex items-center justify-between pt-2 group-data-[collapsible=icon]:justify-start">
             <div className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0">
-              {/* When collapsed: show logo, reveal expand icon on hover */}
+              {/* 折叠状态下：默认显示 Logo，悬停显示展开按钮 */}
               <button
                 onClick={toggleSidebar}
-                className="group/logo relative flex size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-1 ring-highlight/35 transition-all hover:shadow-lg active:scale-95 active:shadow-sm"
+                className="group/logo relative flex size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-md transition-all hover:shadow-lg active:scale-95 active:shadow-sm"
                 type="button"
               >
                 <Bot className="size-5 transition-opacity group-data-[collapsible=icon]:group-hover/logo:opacity-0" />
@@ -386,7 +424,7 @@ export function MainSidebar({
               </button>
               <span
                 onClick={() => router.push(lng ? `/${lng}/home` : "/")}
-                className="cursor-pointer font-display text-xl font-medium tracking-tight text-sidebar-foreground transition-opacity hover:opacity-80 group-data-[collapsible=icon]:hidden"
+                className="text-xl font-medium tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden cursor-pointer hover:opacity-80 transition-opacity font-[family-name:var(--font-space-grotesk)]"
               >
                 Poco
               </span>
@@ -403,7 +441,7 @@ export function MainSidebar({
 
           {!isSelectionMode && (
             <>
-              {/* New Task */}
+              {/* 新建任务按钮 */}
               <SidebarMenu className="group-data-[collapsible=icon]:px-0">
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -440,11 +478,7 @@ export function MainSidebar({
                             "opacity-50 cursor-not-allowed hover:bg-transparent",
                         )}
                         tooltip={
-                          isDisabled
-                            ? t("common.temporarilyUnavailableLabel", {
-                                name: t(labelKey),
-                              })
-                            : t(labelKey)
+                          isDisabled ? `${t(labelKey)} (暂不可用)` : t(labelKey)
                         }
                       >
                         <Icon className="size-4 shrink-0" />
@@ -466,14 +500,81 @@ export function MainSidebar({
 
           {isSelectionMode && (
             <div className="px-2 py-1 text-sm font-medium text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-              {t("sidebar.bulkActions")}
+              批量操作
             </div>
           )}
         </SidebarHeader>
 
-        <SidebarContent className="overflow-hidden group-data-[collapsible=icon]:px-0">
-          <ScrollArea className="h-full">
-            {/* Unassigned tasks (always shown) */}
+        <SidebarContent className="flex flex-col !overflow-hidden gap-0">
+          {/* 项目列表 - 放在上面 */}
+          <div className="flex-shrink-0 max-h-[50%] flex flex-col min-h-0">
+            <Collapsible
+              defaultOpen
+              className="group/collapsible-projects flex flex-col min-h-0 h-full"
+            >
+              <SidebarGroup className="p-0 flex flex-col min-h-0 h-full overflow-hidden group-data-[collapsible=icon]:hidden">
+                <div className="group/projects-header relative flex items-center justify-between p-2 shrink-0">
+                  <SidebarGroupLabel asChild>
+                    <CollapsibleTrigger className="flex flex-1 items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer">
+                      {t("sidebar.projects")}
+                      <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]/collapsible-projects:rotate-90" />
+                    </CollapsibleTrigger>
+                  </SidebarGroupLabel>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onOpenCreateProjectDialog?.()}
+                    className="relative z-10 size-5 flex items-center justify-center text-muted-foreground hover:bg-sidebar-accent"
+                    title={t("sidebar.newProject")}
+                  >
+                    <Plus className="size-3.5" />
+                  </Button>
+                </div>
+                <CollapsibleContent className="flex-1 min-h-0 data-[state=closed]:flex-none">
+                  <ScrollArea className="h-full">
+                    <SidebarGroupContent className="mt-1 group-data-[collapsible=icon]:mt-0 p-2 pt-0">
+                      <SidebarMenu>
+                        {projects.map((project) => (
+                          <CollapsibleProjectItem
+                            key={project.id}
+                            project={project}
+                            tasks={tasksByProject.get(project.id) || []}
+                            isExpanded={expandedProjects.has(project.id)}
+                            onToggle={() => toggleProjectExpanded(project.id)}
+                            onProjectClick={() =>
+                              handleProjectClick(project.id)
+                            }
+                            onDeleteTask={onDeleteTask}
+                            onRenameTask={onRenameTask}
+                            onMoveTaskToProject={onMoveTaskToProject}
+                            allProjects={projects}
+                            onRenameProject={handleRenameProject}
+                            onDeleteProject={onDeleteProject}
+                            isSelectionMode={isSelectionMode}
+                            selectedTaskIds={selectedTaskIds}
+                            selectedProjectIds={selectedProjectIds}
+                            onToggleTaskSelection={handleToggleTaskSelection}
+                            onEnableSelectionMode={
+                              handleEnableTaskSelectionMode
+                            }
+                            onToggleProjectSelection={
+                              handleToggleProjectSelection
+                            }
+                            onEnableProjectSelectionMode={
+                              handleEnableProjectSelectionMode
+                            }
+                          />
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </ScrollArea>
+                </CollapsibleContent>
+              </SidebarGroup>
+            </Collapsible>
+          </div>
+
+          <div className="flex-1 min-h-0 flex flex-col">
+            {/* 所有任务（未归类） - 放在下面 */}
             <DroppableAllTasksGroup
               title={t("sidebar.allTasks")}
               tasks={unassignedTasks}
@@ -486,57 +587,10 @@ export function MainSidebar({
               onToggleTaskSelection={handleToggleTaskSelection}
               onEnableSelectionMode={handleEnableTaskSelectionMode}
             />
-
-            {/* Projects */}
-            <SidebarGroup className="pt-4 pb-2 overflow-hidden group-data-[collapsible=icon]:hidden border-t border-sidebar-border">
-              <div className="group/projects-header relative flex items-center justify-between pr-2">
-                <SidebarGroupLabel className="text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
-                  {t("sidebar.projects")}
-                </SidebarGroupLabel>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onOpenCreateProjectDialog?.()}
-                  className="relative z-10 size-5 flex items-center justify-center text-muted-foreground hover:bg-sidebar-accent"
-                  title={t("sidebar.newProject")}
-                >
-                  <Plus className="size-3" />
-                </Button>
-              </div>
-              <SidebarGroupContent className="mt-1 group-data-[collapsible=icon]:mt-0">
-                <SidebarMenu>
-                  {projects.map((project) => (
-                    <CollapsibleProjectItem
-                      key={project.id}
-                      project={project}
-                      tasks={tasksByProject.get(project.id) || []}
-                      isExpanded={expandedProjects.has(project.id)}
-                      onToggle={() => toggleProjectExpanded(project.id)}
-                      onProjectClick={() => handleProjectClick(project.id)}
-                      onDeleteTask={onDeleteTask}
-                      onRenameTask={onRenameTask}
-                      onMoveTaskToProject={onMoveTaskToProject}
-                      allProjects={projects}
-                      onRenameProject={handleRenameProject}
-                      onDeleteProject={onDeleteProject}
-                      isSelectionMode={isSelectionMode}
-                      selectedTaskIds={selectedTaskIds}
-                      selectedProjectIds={selectedProjectIds}
-                      onToggleTaskSelection={handleToggleTaskSelection}
-                      onEnableSelectionMode={handleEnableTaskSelectionMode}
-                      onToggleProjectSelection={handleToggleProjectSelection}
-                      onEnableProjectSelectionMode={
-                        handleEnableProjectSelectionMode
-                      }
-                    />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </ScrollArea>
+          </div>
         </SidebarContent>
 
-        <SidebarFooter className="relative border-t border-sidebar-border bg-transparent p-2 group-data-[collapsible=icon]:p-2">
+        <SidebarFooter className="border-t border-sidebar-border p-2 group-data-[collapsible=icon]:p-2 relative bg-sidebar">
           {isSelectionMode ? (
             <div className="flex items-center justify-between w-full animate-in slide-in-from-bottom duration-200 px-1">
               <Button
@@ -544,7 +598,7 @@ export function MainSidebar({
                 size="icon"
                 onClick={handleCancelSelectionMode}
                 className="size-8 text-muted-foreground hover:bg-sidebar-accent"
-                title={t("common.cancel")}
+                title={t("common.cancel") || "取消"}
               >
                 <X className="size-4" />
               </Button>
@@ -559,13 +613,13 @@ export function MainSidebar({
                 onClick={handleDeleteSelectedItems}
                 disabled={selectedTaskIds.size + selectedProjectIds.size === 0}
                 className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                title={t("common.delete")}
+                title={t("common.delete") || "删除"}
               >
                 <Trash2 className="size-4" />
               </Button>
             </div>
           ) : (
-            /* Footer toolbar (normal mode) */
+            /* 底部工具栏 - 正常模式 */
             <div className="flex items-center justify-start px-1 group-data-[collapsible=icon]:px-0">
               <Button
                 variant="ghost"
@@ -576,7 +630,6 @@ export function MainSidebar({
               >
                 <SlidersHorizontal className="size-4" />
               </Button>
-              <ThemeToggle className="ml-1" />
               <Button
                 variant="ghost"
                 size="icon"

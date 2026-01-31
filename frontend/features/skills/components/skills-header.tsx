@@ -6,12 +6,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useT } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { useAppShell } from "@/components/shared/app-shell-context";
+import { HeaderSearchInput } from "@/components/shared/header-search-input";
 
 interface SkillsHeaderProps {
   onImport?: () => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 }
 
-export function SkillsHeader({ onImport }: SkillsHeaderProps) {
+export function SkillsHeader({
+  onImport,
+  searchQuery,
+  onSearchChange,
+}: SkillsHeaderProps) {
   const { t } = useT("translation");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,6 +45,11 @@ export function SkillsHeader({ onImport }: SkillsHeaderProps) {
 
       {/* Right: Action Buttons */}
       <div className="flex items-center gap-2">
+        <HeaderSearchInput
+          value={searchQuery}
+          onChange={onSearchChange}
+          placeholder={t("library.skillsPage.searchPlaceholder", "搜索技能...")}
+        />
         <Button variant="ghost" size="sm" className="gap-2" onClick={onImport}>
           <Search className="size-4" />
           {t("library.skillsImport.title", "导入技能")}

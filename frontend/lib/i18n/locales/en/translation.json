@@ -7,6 +7,7 @@
     "newTask": "New Task",
     "search": "Search",
     "library": "Capabilities",
+    "scheduledTasks": "Scheduled Tasks",
     "projects": "Projects",
     "newProject": "New Project",
     "newProjectPrompt": "Enter project name:",
@@ -110,6 +111,12 @@
       "selected": "{{count}}/{{total}} servers selected",
       "cancel": "Cancel",
       "confirm": "Confirm"
+    },
+    "warnings": {
+      "tooManyMcps": "Too many MCP servers enabled ({{count}}). This may slow down system loading and reduce performance.",
+      "tooManySkills": "Too many skills enabled ({{count}}). This may slow down system loading and reduce performance.",
+      "mcpLimitReached": "Enabling this MCP will exceed the recommended limit (3 servers). Too many MCPs may slow down system loading.",
+      "skillLimitReached": "Enabling this skill will exceed the recommended limit (5 skills). Too many skills may slow down system loading."
     }
   },
   "prompts": {
@@ -149,6 +156,8 @@
     "emptyState": "Start a new conversation",
     "emptyStateDesc": "Enter a message to start chatting with the AI assistant",
     "stopGenerating": "Stop Generating",
+    "cancelTask": "Cancel task",
+    "cancelTaskConfirm": "Cancel the current task?",
     "regenerate": "Regenerate",
     "model": "Model",
     "tokens": "Tokens",
@@ -228,6 +237,7 @@
     "running": "Running",
     "completed": "Completed",
     "failed": "Failed",
+    "canceled": "Canceled",
     "loading": "Loading...",
     "progress": "Progress"
   },
@@ -303,7 +313,7 @@
   },
   "library": {
     "title": "Capabilities",
-    "subtitle": "Manage your skills, plugins and scheduled tasks",
+    "subtitle": "Manage your skills, plugins and tools",
     "comingSoon": "Coming Soon",
     "skillsStore": {
       "title": "Skills",
@@ -708,6 +718,7 @@
       "actions": {
         "enable": "Enable",
         "disable": "Disable",
+        "uninstall": "Uninstall",
         "settings": "Configure",
         "configure": "Configure MCP Server"
       },
@@ -732,6 +743,7 @@
       "toasts": {
         "enabled": "MCP server enabled",
         "disabled": "MCP server disabled",
+        "uninstalled": "MCP server uninstalled",
         "error": "Operation failed, please try again"
       }
     }
@@ -781,5 +793,13 @@
     "syncing": "Syncing…",
     "toggleTheme": "Toggle theme",
     "temporarilyUnavailableLabel": "{{name}} (temporarily unavailable)"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}}",
+    "of": "/ {{total}}",
+    "rowsPerPage": "Rows per page",
+    "items": "items"
   }
 }

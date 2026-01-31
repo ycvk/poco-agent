@@ -134,6 +134,20 @@ export async function sendMessageAction(input: SendMessageInput) {
   };
 }
 
+const cancelSessionSchema = z.object({
+  sessionId: z.string().trim().min(1, "缺少会话 ID"),
+  reason: z.string().optional().nullable(),
+});
+
+export type CancelSessionInput = z.infer<typeof cancelSessionSchema>;
+
+export async function cancelSessionAction(input: CancelSessionInput) {
+  const { sessionId, reason } = cancelSessionSchema.parse(input);
+  return chatService.cancelSession(sessionId, {
+    reason: reason ?? undefined,
+  });
+}
+
 const deleteSessionSchema = z.object({
   sessionId: z.string().trim().min(1, "缺少会话 ID"),
 });

@@ -264,11 +264,11 @@ export function useChatMessages({
     prevStatusRef.current = currentStatus;
 
     // Only refresh when transitioning TO a terminal state
-    const isTerminal = ["completed", "failed", "stopped"].includes(
+    const isTerminal = ["completed", "failed", "stopped", "canceled"].includes(
       currentStatus,
     );
     const wasTerminal = prevStatus
-      ? ["completed", "failed", "stopped"].includes(prevStatus)
+      ? ["completed", "failed", "stopped", "canceled"].includes(prevStatus)
       : false;
 
     if (isTerminal && !wasTerminal) {

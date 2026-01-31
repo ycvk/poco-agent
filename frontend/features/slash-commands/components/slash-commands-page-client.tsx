@@ -18,6 +18,17 @@ export function SlashCommandsPageClient() {
   const [dialogMode, setDialogMode] =
     useState<SlashCommandDialogMode>("create");
   const [editing, setEditing] = useState<SlashCommand | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredCommands = store.commands.filter((cmd) => {
+    if (!searchQuery) return true;
+    const lowerQuery = searchQuery.toLowerCase();
+    return (
+      cmd.name.toLowerCase().includes(lowerQuery) ||
+      (cmd.description || "").toLowerCase().includes(lowerQuery) ||
+      (cmd.content || "").toLowerCase().includes(lowerQuery)
+    );
+  });
 
   return (
     <>
@@ -27,6 +38,8 @@ export function SlashCommandsPageClient() {
           setEditing(null);
           setDialogOpen(true);
         }}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -34,7 +47,7 @@ export function SlashCommandsPageClient() {
           <div className="flex flex-1 flex-col px-6 py-6 overflow-auto">
             <div className="w-full max-w-4xl mx-auto">
               <SlashCommandsList
-                commands={store.commands}
+                commands={filteredCommands}
                 savingId={store.savingId}
                 onToggleEnabled={(id, enabled) => store.setEnabled(id, enabled)}
                 onEdit={(cmd) => {

@@ -7,6 +7,7 @@
     "newTask": "新建任务",
     "search": "搜索",
     "library": "能力",
+    "scheduledTasks": "定时任务",
     "projects": "项目",
     "newProject": "新建项目",
     "newProjectPrompt": "请输入项目名称：",
@@ -110,6 +111,12 @@
       "selected": "已选择 {{count}}/{{total}} 个服务器",
       "cancel": "取消",
       "confirm": "确认"
+    },
+    "warnings": {
+      "tooManyMcps": "启用的 MCP 服务器过多（{{count}} 个），可能会导致系统加载变慢、性能下降。",
+      "tooManySkills": "启用的技能过多（{{count}} 个），可能会导致系统加载变慢、性能下降。",
+      "mcpLimitReached": "启用此 MCP 将超过推荐数量（3 个）。过多的 MCP 可能会导致系统加载变慢。",
+      "skillLimitReached": "启用此技能将超过推荐数量（5 个）。过多的技能可能会导致系统加载变慢。"
     }
   },
   "prompts": {
@@ -149,6 +156,8 @@
     "emptyState": "开始一个新对话",
     "emptyStateDesc": "输入消息开始与 AI 助手对话",
     "stopGenerating": "停止生成",
+    "cancelTask": "取消任务",
+    "cancelTaskConfirm": "确定要取消当前任务吗？",
     "regenerate": "重新生成",
     "model": "模型",
     "tokens": "Token",
@@ -228,6 +237,7 @@
     "running": "进行中",
     "completed": "已完成",
     "failed": "失败",
+    "canceled": "已取消",
     "loading": "加载中...",
     "progress": "进度"
   },
@@ -303,7 +313,7 @@
   },
   "library": {
     "title": "能力",
-    "subtitle": "管理您的技能、插件和定时任务",
+    "subtitle": "管理您的技能、插件和工具",
     "comingSoon": "即将推出",
     "skillsStore": {
       "title": "Skills",
@@ -708,6 +718,7 @@
       "actions": {
         "enable": "启用",
         "disable": "停用",
+        "uninstall": "卸载",
         "settings": "设置",
         "configure": "配置 MCP 服务器"
       },
@@ -732,6 +743,7 @@
       "toasts": {
         "enabled": "已启用",
         "disabled": "已停用",
+        "uninstalled": "已卸载",
         "error": "操作失败，请稍后重试"
       }
     }
@@ -781,5 +793,13 @@
     "syncing": "同步中…",
     "toggleTheme": "切换主题",
     "temporarilyUnavailableLabel": "{{name}}（暂不可用）"
+  },
+  "pagination": {
+    "previous": "上一页",
+    "next": "下一页",
+    "page": "第 {{page}} 页",
+    "of": "/ {{total}} 页",
+    "rowsPerPage": "每页显示",
+    "items": "条"
   }
 }

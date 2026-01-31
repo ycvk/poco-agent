@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { HardDrive, Database, Zap } from "lucide-react";
+import { HardDrive, Database, Zap, AlertTriangle } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import {
   Dialog,
@@ -13,8 +13,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { mcpService } from "@/features/mcp/services/mcp-service";
 import type { McpDisplayItem } from "@/features/mcp/hooks/use-mcp-catalog";
+
+const MCP_LIMIT = 3;
 
 interface McpSelectorDialogProps {
   open: boolean;
@@ -100,6 +103,12 @@ export function McpSelectorDialog({
   }, [open, mcpConfig]);
 
   const handleToggle = (serverId: number, checked: boolean) => {
+    // Check if enabling would exceed the limit
+    const currentEnabledCount =
+      Object.values(localConfig).filter(Boolean).length;
+    if (checked && currentEnabledCount >= MCP_LIMIT) {
+      // Still allow toggling, but the warning alert will show below
+    }
     setLocalConfig((prev) => ({ ...prev, [serverId]: checked }));
   };
 
@@ -124,6 +133,15 @@ export function McpSelectorDialog({
             {t("hero.mcpSelector.description")}
           </DialogDescription>
         </DialogHeader>
+
+        {enabledCount > MCP_LIMIT && (
+          <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-500 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-500 *:data-[slot=alert-description]:text-amber-600/90 dark:*:data-[slot=alert-description]:text-amber-500/90">
+            <AlertTriangle className="size-4" />
+            <AlertDescription>
+              {t("hero.warnings.tooManyMcps", { count: enabledCount })}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">

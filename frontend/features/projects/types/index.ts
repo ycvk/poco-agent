@@ -14,6 +14,6 @@ export interface TaskHistoryItem {
   id: string;
   title: string;
   timestamp: string;
-  status: "pending" | "running" | "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed" | "canceled";
   projectId?: string;
 }

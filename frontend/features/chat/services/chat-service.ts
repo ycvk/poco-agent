@@ -8,6 +8,8 @@ import type {
   FileNode,
   ChatMessage,
   MessageBlock,
+  SessionCancelRequest,
+  SessionCancelResponse,
   SessionResponse,
   SessionUpdateRequest,
   TaskEnqueueRequest,
@@ -95,9 +97,11 @@ function toExecutionSession(
         ? "completed"
         : session.status === "failed"
           ? "failed"
-          : session.status === "running"
-            ? "running"
-            : "accepted",
+          : session.status === "canceled" || session.status === "cancelled"
+            ? "canceled"
+            : session.status === "running"
+              ? "running"
+              : "accepted",
     progress,
     state_patch: session.state_patch ?? {},
     config_snapshot: parseConfigSnapshot(session.config_snapshot),
@@ -220,6 +224,16 @@ export const chatService = {
     return apiClient.patch<SessionResponse>(
       API_ENDPOINTS.session(sessionId),
       payload,
+    );
+  },
+
+  cancelSession: async (
+    sessionId: string,
+    payload?: SessionCancelRequest,
+  ): Promise<SessionCancelResponse> => {
+    return apiClient.post<SessionCancelResponse>(
+      API_ENDPOINTS.sessionCancel(sessionId),
+      payload ?? {},
     );
   },
 

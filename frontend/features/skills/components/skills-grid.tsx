@@ -1,13 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { Package, Trash2 } from "lucide-react";
+import { Trash2, Power, PowerOff, AlertTriangle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Skill, UserSkillInstall } from "@/features/skills/types";
 import { useT } from "@/lib/i18n/client";
+import { toast } from "sonner";
+
+const SKILL_LIMIT = 5;
 
 interface SkillsGridProps {
   skills: Skill[];
@@ -17,6 +21,8 @@ interface SkillsGridProps {
   onInstall?: (skillId: number) => void;
   onUninstall?: (installId: number) => void;
   onToggleEnabled?: (installId: number, enabled: boolean) => void;
+  onBatchToggle?: (enabled: boolean) => void;
+  totalCount?: number;
 }
 
 export function SkillsGrid({
@@ -27,6 +33,8 @@ export function SkillsGrid({
   onInstall,
   onUninstall,
   onToggleEnabled,
+  onBatchToggle,
+  totalCount,
 }: SkillsGridProps) {
   const { t } = useT("translation");
 
@@ -43,22 +51,50 @@ export function SkillsGrid({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl bg-muted/50 px-5 py-3">
+      {/* Warning alert */}
+      {enabledCount > SKILL_LIMIT && (
+        <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-500 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-500 *:data-[slot=alert-description]:text-amber-600/90 dark:*:data-[slot=alert-description]:text-amber-500/90">
+          <AlertTriangle className="size-4" />
+          <AlertDescription>
+            {t("hero.warnings.tooManySkills", { count: enabledCount })}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Stats bar with batch controls */}
+      <div className="rounded-xl bg-muted/50 px-5 py-3 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">
           {t("library.skillsManager.stats.available", "可用技能")}:{" "}
-          {skills.length} ·{" "}
+          {totalCount ?? skills.length} ·{" "}
           {t("library.skillsManager.stats.installed", "已安装")}:{" "}
           {installedCount} ·{" "}
           {t("library.skillsManager.stats.enabled", "已启用")}: {enabledCount}
         </span>
+        {installs.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onBatchToggle?.(true)}
+              className="h-7 px-2 text-xs"
+            >
+              <Power className="size-3 mr-1" />
+              全部启用
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onBatchToggle?.(false)}
+              className="h-7 px-2 text-xs"
+            >
+              <PowerOff className="size-3 mr-1" />
+              全部禁用
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Package className="size-4" />
-          <span>{t("library.skillsManager.section.title", "Skills")}</span>
-        </div>
-
         <div className="space-y-2">
           {!isLoading && skills.length === 0 && (
             <div className="rounded-xl border border-border/50 bg-muted/10 px-4 py-6 text-sm text-muted-foreground text-center">

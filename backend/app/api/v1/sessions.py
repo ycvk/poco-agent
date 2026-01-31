@@ -1,15 +1,22 @@
 import uuid
+import json
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.core.observability.request_context import get_request_id, get_trace_id
+from app.core.settings import get_settings
 from app.core.deps import get_current_user_id, get_db
 from app.core.errors.error_codes import ErrorCode
 from app.core.errors.exceptions import AppException
 from app.schemas.message import MessageResponse, MessageWithFilesResponse
 from app.schemas.response import Response, ResponseSchema
 from app.schemas.session import (
+    SessionCancelRequest,
+    SessionCancelResponse,
     SessionCreateRequest,
     SessionResponse,
     SessionStateResponse,
@@ -37,6 +44,49 @@ message_service = MessageService()
 tool_execution_service = ToolExecutionService()
 usage_service = UsageService()
 storage_service = S3StorageService()
+
+
+def _cancel_executor_manager(session_id: uuid.UUID, reason: str | None) -> bool:
+    """Best-effort cancel request to Executor Manager.
+
+    This stops the executor container for the session, but cancellation should still
+    succeed locally even if Executor Manager is unavailable.
+    """
+    settings = get_settings()
+    url = f"{settings.executor_manager_url}/api/v1/executor/cancel"
+
+    payload = {"session_id": str(session_id)}
+    if reason is not None:
+        payload["reason"] = reason
+
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+    }
+    request_id = get_request_id()
+    if request_id:
+        headers["X-Request-ID"] = request_id
+    trace_id = get_trace_id()
+    if trace_id:
+        headers["X-Trace-ID"] = trace_id
+
+    try:
+        req = Request(  # noqa: S310
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        with urlopen(req, timeout=3) as resp:  # noqa: S310
+            raw = resp.read().decode("utf-8")
+        parsed = json.loads(raw) if raw else {}
+        if isinstance(parsed, dict):
+            return parsed.get("code") == 0
+    except (HTTPError, URLError, ValueError):
+        return False
+    except Exception:
+        return False
+    return False
 
 
 @router.post("", response_model=ResponseSchema[SessionResponse])
@@ -135,6 +185,33 @@ async def update_session(
     return Response.success(
         data=SessionResponse.model_validate(db_session),
         message="Session updated successfully",
+    )
+
+
+@router.post(
+    "/{session_id}/cancel", response_model=ResponseSchema[SessionCancelResponse]
+)
+async def cancel_session(
+    session_id: uuid.UUID,
+    request: SessionCancelRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Cancel a session (cancel all unfinished runs and stop executor container)."""
+    db_session, canceled_runs, expired_requests = session_service.cancel_session(
+        db, session_id, user_id=user_id
+    )
+    executor_cancelled = _cancel_executor_manager(session_id, request.reason)
+
+    return Response.success(
+        data=SessionCancelResponse(
+            session_id=db_session.id,
+            status=db_session.status,
+            canceled_runs=canceled_runs,
+            expired_user_input_requests=expired_requests,
+            executor_cancelled=executor_cancelled,
+        ),
+        message="Session canceled successfully",
     )
 
 

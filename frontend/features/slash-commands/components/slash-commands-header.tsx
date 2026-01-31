@@ -6,12 +6,19 @@ import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { useAppShell } from "@/components/shared/app-shell-context";
+import { HeaderSearchInput } from "@/components/shared/header-search-input";
 
 interface SlashCommandsHeaderProps {
   onAddClick?: () => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 }
 
-export function SlashCommandsHeader({ onAddClick }: SlashCommandsHeaderProps) {
+export function SlashCommandsHeader({
+  onAddClick,
+  searchQuery,
+  onSearchChange,
+}: SlashCommandsHeaderProps) {
   const { t } = useT("translation");
   const router = useRouter();
   const { lng } = useAppShell();
@@ -33,6 +40,14 @@ export function SlashCommandsHeader({ onAddClick }: SlashCommandsHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <HeaderSearchInput
+          value={searchQuery}
+          onChange={onSearchChange}
+          placeholder={t(
+            "library.slashCommands.searchPlaceholder",
+            "搜索命令...",
+          )}
+        />
         <Button
           variant="ghost"
           size="sm"

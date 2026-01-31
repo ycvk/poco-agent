@@ -12,7 +12,7 @@ interface FileChangesListProps {
     | "accepted"
     | "completed"
     | "failed"
-    | "cancelled"
+    | "canceled"
     | "stopped";
   onFileClick?: (filePath: string) => void;
 }

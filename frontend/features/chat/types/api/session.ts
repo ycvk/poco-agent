@@ -20,6 +20,18 @@ export interface SessionUpdateRequest {
   project_id?: string | null;
 }
 
+export interface SessionCancelRequest {
+  reason?: string | null;
+}
+
+export interface SessionCancelResponse {
+  session_id: string;
+  status: string;
+  canceled_runs: number;
+  expired_user_input_requests: number;
+  executor_cancelled: boolean;
+}
+
 export interface SessionResponse {
   session_id: string; // UUID
   user_id: string;

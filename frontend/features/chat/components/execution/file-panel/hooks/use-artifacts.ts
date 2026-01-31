@@ -62,6 +62,15 @@ const getPresignedUrlExpiresAt = (rawUrl?: string | null): number | null => {
   return null;
 };
 
+const isActiveStatus = (status?: UseArtifactsOptions["sessionStatus"]) =>
+  status === "running" || status === "accepted";
+
+const isFinishedStatus = (status?: UseArtifactsOptions["sessionStatus"]) =>
+  status === "completed" ||
+  status === "failed" ||
+  status === "canceled" ||
+  status === "stopped";
+
 const findFileByPath = (
   nodes: FileNode[],
   targetPath: string,
@@ -86,7 +95,7 @@ interface UseArtifactsOptions {
     | "accepted"
     | "completed"
     | "failed"
-    | "cancelled"
+    | "canceled"
     | "stopped";
 }
 

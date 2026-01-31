@@ -1,13 +1,17 @@
 import logging
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app.core.errors.error_codes import ErrorCode
 from app.core.errors.exceptions import AppException
 from app.models.agent_session import AgentSession
+from app.models.agent_run import AgentRun
 from app.repositories.project_repository import ProjectRepository
+from app.repositories.scheduled_task_repository import ScheduledTaskRepository
 from app.repositories.session_repository import SessionRepository
+from app.repositories.user_input_request_repository import UserInputRequestRepository
 from app.schemas.session import SessionCreateRequest, SessionUpdateRequest
 
 logger = logging.getLogger(__name__)
@@ -141,3 +145,71 @@ class SessionService:
                 pass
 
         return db_session
+
+    def cancel_session(
+        self,
+        db: Session,
+        session_id: uuid.UUID,
+        *,
+        user_id: str,
+    ) -> tuple[AgentSession, int, int]:
+        """Cancel a session by marking all unfinished runs as canceled.
+
+        This is a best-effort local cancellation: it updates database state so the UI stops
+        polling and no new runs are claimed. Executor termination is handled by Executor Manager.
+
+        Returns:
+            (session, canceled_run_count, expired_user_input_request_count)
+        """
+        db_session = self.get_session(db, session_id)
+        if db_session.user_id != user_id:
+            raise AppException(
+                error_code=ErrorCode.FORBIDDEN,
+                message="Session does not belong to the user",
+            )
+
+        now = datetime.now(timezone.utc)
+
+        # Cancel all unfinished runs (queued/claimed/running), including future scheduled runs.
+        runs = (
+            db.query(AgentRun)
+            .filter(AgentRun.session_id == session_id)
+            .filter(AgentRun.status.in_(["queued", "claimed", "running"]))
+            .order_by(AgentRun.created_at.desc())
+            .all()
+        )
+        canceled_runs = 0
+        for run in runs:
+            run.status = "canceled"
+            run.finished_at = now
+            run.claimed_by = None
+            run.lease_expires_at = None
+            canceled_runs += 1
+
+            # Keep scheduled task summary fields in sync when the latest run is canceled.
+            if run.scheduled_task_id:
+                db_task = ScheduledTaskRepository.get_by_id(db, run.scheduled_task_id)
+                if db_task and (
+                    not db_task.last_run_id or db_task.last_run_id == run.id
+                ):
+                    db_task.last_run_id = run.id
+                    db_task.last_run_status = run.status
+                    db_task.last_error = None
+
+        # Expire any pending user input requests so the UI doesn't keep showing blocking cards.
+        pending_requests = UserInputRequestRepository.list_pending_by_session(
+            db, session_id
+        )
+        expired_requests = 0
+        for entry in pending_requests:
+            entry.status = "expired"
+            # Ensure it is considered expired immediately.
+            entry.expires_at = now
+            expired_requests += 1
+
+        db_session.status = "canceled"
+
+        db.commit()
+        db.refresh(db_session)
+
+        return db_session, canceled_runs, expired_requests
