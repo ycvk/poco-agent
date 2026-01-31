@@ -259,6 +259,12 @@
     "showDiff": "Show Diff",
     "hideDiff": "Hide Diff"
   },
+  "fileChangesDrawer": {
+    "title": "File Changes",
+    "moreFiles": "more files",
+    "selectFile": "Select a file to view changes",
+    "noDiff": "No diff available for this file"
+  },
   "todo": {
     "title": "Tasks",
     "pending": "Pending",

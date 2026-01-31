@@ -259,6 +259,12 @@
     "showDiff": "查看 Diff",
     "hideDiff": "隐藏 Diff"
   },
+  "fileChangesDrawer": {
+    "title": "文件变更",
+    "moreFiles": "更多文件",
+    "selectFile": "选择文件查看变更",
+    "noDiff": "该文件暂无 diff 信息"
+  },
   "todo": {
     "title": "任务列表",
     "pending": "待处理",
