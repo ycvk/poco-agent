@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   MoreHorizontal,
   FolderPlus,
@@ -39,6 +39,7 @@ interface Project {
 interface DraggableTaskProps {
   task: TaskHistoryItem;
   lng?: string;
+  isActive?: boolean;
   onDeleteTask: (taskId: string) => Promise<void> | void;
   onMoveClick: (task: TaskHistoryItem) => void;
   isSelectionMode?: boolean;
@@ -53,6 +54,7 @@ interface DraggableTaskProps {
 function DraggableTask({
   task,
   lng,
+  isActive,
   onDeleteTask,
   onMoveClick,
   isSelectionMode,
@@ -132,6 +134,9 @@ function DraggableTask({
       <SidebarMenuButton
         className={cn(
           "h-[36px] min-w-0 max-w-[calc(var(--sidebar-width)-16px)] w-full justify-start gap-3 rounded-[10px] px-3 py-[7.5px] text-left transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:max-w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pr-0",
+          isActive &&
+            !isSelectionMode &&
+            "bg-sidebar-accent text-sidebar-accent-foreground",
           !isSelectionMode && "pr-8", // Padding only when not in selection mode (for 'more' button space)
         )}
         tooltip={task.title}
@@ -162,7 +167,7 @@ function DraggableTask({
           </div>
         ) : (
           <>
-            {/* 拖拽手柄 */}
+            {/* Drag handle */}
             <div
               className="size-4 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity group-data-[collapsible=icon]:hidden"
               {...listeners}
@@ -171,7 +176,7 @@ function DraggableTask({
               <GripVertical className="size-3" />
             </div>
 
-            {/* 第一栏：状态指示器 */}
+            {/* Status indicator */}
             {task.status === "running" ? (
               <Loader2 className="size-3 shrink-0 animate-spin text-info" />
             ) : (
@@ -185,7 +190,7 @@ function DraggableTask({
             )}
             <span className="sr-only">{t(statusMeta.labelKey)}</span>
 
-            {/* 第二栏：文字 */}
+            {/* Title */}
             <span
               className={cn(
                 "flex-1 min-w-0 truncate text-sm group-data-[collapsible=icon]:hidden",
@@ -197,7 +202,7 @@ function DraggableTask({
         )}
       </SidebarMenuButton>
 
-      {/* 第三栏：更多按钮 - 仅在非选择模式显示 */}
+      {/* Overflow menu (only when not in selection mode) */}
       {!isSelectionMode && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -267,11 +272,17 @@ export function TaskHistoryList({
   onEnableSelectionMode?: (taskId: string) => void;
 }) {
   const params = useParams();
+  const pathname = usePathname();
   const lng = React.useMemo(() => {
     const value = params?.lng;
     if (!value) return undefined;
     return Array.isArray(value) ? value[0] : value;
   }, [params]);
+
+  const activeTaskId = React.useMemo(() => {
+    const match = pathname.match(/\/chat\/([^/]+)/);
+    return match?.[1] ?? null;
+  }, [pathname]);
 
   // Dialog states
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
@@ -310,6 +321,7 @@ export function TaskHistoryList({
             key={task.id}
             task={task}
             lng={lng}
+            isActive={activeTaskId === task.id}
             onDeleteTask={onDeleteTask}
             onMoveClick={handleMoveClick}
             isSelectionMode={isSelectionMode}

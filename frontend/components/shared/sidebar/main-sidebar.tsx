@@ -29,6 +29,7 @@ import { useT } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -167,7 +168,7 @@ export function MainSidebar({
     Set<string>
   >(new Set());
 
-  // 管理每个项目的折叠状态
+  // Manage each project's expanded/collapsed state
   const [expandedProjects, setExpandedProjects] = React.useState<Set<string>>(
     new Set(),
   );
@@ -190,13 +191,13 @@ export function MainSidebar({
     }
   }, [params?.id, taskHistory]);
 
-  // 过滤出未归类到项目的任务
+  // Unassigned tasks (not grouped into a project)
   const unassignedTasks = React.useMemo(
     () => taskHistory.filter((task) => !task.projectId),
     [taskHistory],
   );
 
-  // 按项目分组任务
+  // Group tasks by project
   const tasksByProject = React.useMemo(() => {
     const grouped = new Map<string, TaskHistoryItem[]>();
     taskHistory.forEach((task) => {
@@ -369,18 +370,15 @@ export function MainSidebar({
       collisionDetection={pointerWithin}
       onDragEnd={handleDragEnd}
     >
-      <Sidebar
-        collapsible="icon"
-        className="border-r-0 bg-sidebar overflow-hidden"
-      >
+      <Sidebar variant="floating" collapsible="icon" className="overflow-hidden">
         <SidebarHeader className="gap-2 pb-2">
-          {/* Logo 和折叠按钮 */}
+          {/* Brand + collapse toggle */}
           <div className="mb-3 flex items-center justify-between pt-2 group-data-[collapsible=icon]:justify-start">
             <div className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0">
-              {/* 折叠状态下：默认显示 Logo，悬停显示展开按钮 */}
+              {/* When collapsed: show logo, reveal expand icon on hover */}
               <button
                 onClick={toggleSidebar}
-                className="group/logo relative flex size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-md transition-all hover:shadow-lg active:scale-95 active:shadow-sm"
+                className="group/logo relative flex size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-1 ring-highlight/35 transition-all hover:shadow-lg active:scale-95 active:shadow-sm"
                 type="button"
               >
                 <Bot className="size-5 transition-opacity group-data-[collapsible=icon]:group-hover/logo:opacity-0" />
@@ -388,7 +386,7 @@ export function MainSidebar({
               </button>
               <span
                 onClick={() => router.push(lng ? `/${lng}/home` : "/")}
-                className="text-xl font-medium tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden cursor-pointer hover:opacity-80 transition-opacity font-[family-name:var(--font-space-grotesk)]"
+                className="cursor-pointer font-display text-xl font-medium tracking-tight text-sidebar-foreground transition-opacity hover:opacity-80 group-data-[collapsible=icon]:hidden"
               >
                 Poco
               </span>
@@ -405,7 +403,7 @@ export function MainSidebar({
 
           {!isSelectionMode && (
             <>
-              {/* 新建任务按钮 */}
+              {/* New Task */}
               <SidebarMenu className="group-data-[collapsible=icon]:px-0">
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -442,7 +440,11 @@ export function MainSidebar({
                             "opacity-50 cursor-not-allowed hover:bg-transparent",
                         )}
                         tooltip={
-                          isDisabled ? `${t(labelKey)} (暂不可用)` : t(labelKey)
+                          isDisabled
+                            ? t("common.temporarilyUnavailableLabel", {
+                                name: t(labelKey),
+                              })
+                            : t(labelKey)
                         }
                       >
                         <Icon className="size-4 shrink-0" />
@@ -464,14 +466,14 @@ export function MainSidebar({
 
           {isSelectionMode && (
             <div className="px-2 py-1 text-sm font-medium text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-              批量操作
+              {t("sidebar.bulkActions")}
             </div>
           )}
         </SidebarHeader>
 
         <SidebarContent className="overflow-hidden group-data-[collapsible=icon]:px-0">
           <ScrollArea className="h-full">
-            {/* 所有任务（未归类） - 始终显示 */}
+            {/* Unassigned tasks (always shown) */}
             <DroppableAllTasksGroup
               title={t("sidebar.allTasks")}
               tasks={unassignedTasks}
@@ -485,7 +487,7 @@ export function MainSidebar({
               onEnableSelectionMode={handleEnableTaskSelectionMode}
             />
 
-            {/* 项目列表 */}
+            {/* Projects */}
             <SidebarGroup className="pt-4 pb-2 overflow-hidden group-data-[collapsible=icon]:hidden border-t border-sidebar-border">
               <div className="group/projects-header relative flex items-center justify-between pr-2">
                 <SidebarGroupLabel className="text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
@@ -534,7 +536,7 @@ export function MainSidebar({
           </ScrollArea>
         </SidebarContent>
 
-        <SidebarFooter className="border-t border-sidebar-border p-2 group-data-[collapsible=icon]:p-2 relative bg-sidebar">
+        <SidebarFooter className="relative border-t border-sidebar-border bg-transparent p-2 group-data-[collapsible=icon]:p-2">
           {isSelectionMode ? (
             <div className="flex items-center justify-between w-full animate-in slide-in-from-bottom duration-200 px-1">
               <Button
@@ -542,7 +544,7 @@ export function MainSidebar({
                 size="icon"
                 onClick={handleCancelSelectionMode}
                 className="size-8 text-muted-foreground hover:bg-sidebar-accent"
-                title={t("common.cancel") || "取消"}
+                title={t("common.cancel")}
               >
                 <X className="size-4" />
               </Button>
@@ -557,13 +559,13 @@ export function MainSidebar({
                 onClick={handleDeleteSelectedItems}
                 disabled={selectedTaskIds.size + selectedProjectIds.size === 0}
                 className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                title={t("common.delete") || "删除"}
+                title={t("common.delete")}
               >
                 <Trash2 className="size-4" />
               </Button>
             </div>
           ) : (
-            /* 底部工具栏 - 正常模式 */
+            /* Footer toolbar (normal mode) */
             <div className="flex items-center justify-start px-1 group-data-[collapsible=icon]:px-0">
               <Button
                 variant="ghost"
@@ -574,6 +576,7 @@ export function MainSidebar({
               >
                 <SlidersHorizontal className="size-4" />
               </Button>
+              <ThemeToggle className="ml-1" />
               <Button
                 variant="ghost"
                 size="icon"

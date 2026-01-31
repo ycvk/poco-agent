@@ -87,7 +87,7 @@ export function AppShell({
     <TaskHistoryProvider value={{ refreshTasks }}>
       <AppShellProvider value={contextValue}>
         <SidebarProvider defaultOpen={true}>
-          <div className="flex h-screen w-full overflow-hidden bg-background">
+          <div className="app-background flex h-full w-full overflow-hidden text-foreground">
             <AppSidebar
               projects={projects}
               taskHistory={taskHistory}
@@ -99,7 +99,7 @@ export function AppShell({
               onOpenSettings={openSettings}
             />
 
-            <SidebarInset className="flex flex-col bg-muted/30 min-h-0">
+            <SidebarInset className="relative flex min-h-0 flex-1 flex-col overflow-hidden border border-border/70 bg-card md:m-2 md:rounded-2xl md:shadow-sm">
               {children}
             </SidebarInset>
 
