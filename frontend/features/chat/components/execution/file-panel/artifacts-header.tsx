@@ -6,6 +6,7 @@ import {
 import type { FileNode } from "@/features/chat/types";
 import { apiClient, API_ENDPOINTS } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/client";
 
 interface ArtifactsHeaderProps {
   title?: string;
@@ -26,7 +27,9 @@ export function ArtifactsHeader({
   onToggleSidebar,
   sessionId,
 }: ArtifactsHeaderProps) {
-  const headerTitle = title || selectedFile?.name || "文档预览";
+  const { t } = useT("translation");
+  const headerTitle =
+    title || selectedFile?.name || t("chat.artifacts.previewTitle");
 
   const handleDownload = async () => {
     if (!sessionId) return;
@@ -45,13 +48,13 @@ export function ArtifactsHeader({
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast.success("开始下载工作区归档");
+        toast.success(t("chat.artifacts.toasts.downloadStarted"));
       } else {
-        toast.error("归档文件暂不可用");
+        toast.error(t("chat.artifacts.toasts.archiveUnavailable"));
       }
     } catch (error) {
       console.error("[Artifacts] Failed to download workspace archive", error);
-      toast.error("下载失败");
+      toast.error(t("chat.artifacts.toasts.downloadFailed"));
     }
   };
 
@@ -59,14 +62,14 @@ export function ArtifactsHeader({
     <PanelHeader
       icon={Layers}
       title={headerTitle}
-      description="工作区文件预览"
+      description={t("chat.artifacts.description")}
       className="border-b"
       action={
         <div className="flex items-center gap-1">
           {sessionId && (
             <PanelHeaderAction
               onClick={handleDownload}
-              aria-label="下载工作区归档"
+              aria-label={t("chat.artifacts.actions.downloadArchive")}
             >
               <Download className="size-4" />
             </PanelHeaderAction>
@@ -75,7 +78,9 @@ export function ArtifactsHeader({
             <PanelHeaderAction
               onClick={onToggleSidebar}
               aria-label={
-                isSidebarCollapsed ? "展开文件侧边栏" : "折叠文件侧边栏"
+                isSidebarCollapsed
+                  ? t("chat.artifacts.actions.expandSidebar")
+                  : t("chat.artifacts.actions.collapseSidebar")
               }
             >
               {isSidebarCollapsed ? (

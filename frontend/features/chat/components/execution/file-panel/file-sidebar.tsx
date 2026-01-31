@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FileNode } from "@/features/chat/types";
+import { useT } from "@/lib/i18n/client";
 
 interface FileSidebarProps {
   files: FileNode[];
@@ -165,16 +166,17 @@ export function FileSidebar({
   onFileSelect,
   selectedFile,
 }: FileSidebarProps) {
+  const { t } = useT("translation");
   return (
     <aside className="flex h-full min-h-0 min-w-0 flex-col border-l border-border/60 bg-sidebar/60 text-sidebar-foreground">
       <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/70">
-        文件列表
+        {t("chat.artifacts.sidebar.title")}
       </div>
       <ScrollArea className="flex-1 min-h-0">
         <div className="px-2 py-2 space-y-1 min-w-0 overflow-hidden">
           {files.length === 0 ? (
             <p className="text-xs text-sidebar-foreground/60 px-2 py-1">
-              暂无文件
+              {t("chat.artifacts.sidebar.empty")}
             </p>
           ) : (
             files.map((file) => (
