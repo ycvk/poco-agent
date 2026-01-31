@@ -1,15 +1,15 @@
 "use client";
 
+import * as React from "react";
 import { FileCard } from "@/components/shared/file-card";
 import type { MessageBlock, InputFile } from "@/features/chat/types";
 
-export function UserMessage({
-  content,
-  attachments,
-}: {
+interface UserMessageProps {
   content: string | MessageBlock[];
   attachments?: InputFile[];
-}) {
+}
+
+const UserMessageComponent = ({ content, attachments }: UserMessageProps) => {
   // Parse content if it's an array of blocks
   const parseContent = (content: string | MessageBlock[]): string => {
     if (typeof content === "string") {
@@ -46,4 +46,6 @@ export function UserMessage({
       )}
     </div>
   );
-}
+};
+
+export const UserMessage = React.memo(UserMessageComponent);

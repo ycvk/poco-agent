@@ -11,10 +11,13 @@ import type {
 } from "@/features/chat/types";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n/client";
+import { cn } from "@/lib/utils";
 
 interface AssistantMessageProps {
   message: ChatMessage;
   runUsage?: UsageResponse | null;
+  /** Whether to animate the message entrance. Defaults to true. */
+  animate?: boolean;
 }
 
 function pickNumber(value: unknown): number | null {
@@ -35,7 +38,11 @@ function formatDurationMs(value: number | null | undefined): string | null {
   return seconds >= 60 ? `${Math.round(seconds)}s` : `${seconds.toFixed(1)}s`;
 }
 
-export function AssistantMessage({ message, runUsage }: AssistantMessageProps) {
+const AssistantMessageComponent = ({
+  message,
+  runUsage,
+  animate = true,
+}: AssistantMessageProps) => {
   const { t } = useT("translation");
   const [isCopied, setIsCopied] = React.useState(false);
   const [isLiked, setIsLiked] = React.useState(false);
@@ -104,7 +111,12 @@ export function AssistantMessage({ message, runUsage }: AssistantMessageProps) {
     (costLabel !== null || tokensLabel !== null || durationLabel !== null);
 
   return (
-    <div className="flex w-full gap-4 group animate-in fade-in slide-in-from-left-4 duration-300 min-w-0">
+    <div
+      className={cn(
+        "flex w-full gap-4 group min-w-0",
+        animate && "animate-in fade-in slide-in-from-left-4 duration-300",
+      )}
+    >
       {/* Avatar Section */}
       <div className="flex-shrink-0 mt-1">
         <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center">
@@ -141,7 +153,7 @@ export function AssistantMessage({ message, runUsage }: AssistantMessageProps) {
               size="icon"
               className="size-7 text-muted-foreground hover:text-foreground"
               onClick={onCopy}
-              title="Copy message"
+              title={t("chat.copyMessage")}
             >
               {isCopied ? (
                 <Check className="size-3.5" />
@@ -158,7 +170,7 @@ export function AssistantMessage({ message, runUsage }: AssistantMessageProps) {
                   : "text-muted-foreground"
               }`}
               onClick={onLike}
-              title="Like response"
+              title={t("chat.likeResponse")}
             >
               <ThumbsUp
                 className={`size-3.5 ${isLiked ? "fill-current" : ""}`}
@@ -181,4 +193,18 @@ export function AssistantMessage({ message, runUsage }: AssistantMessageProps) {
       </div>
     </div>
   );
-}
+};
+
+export const AssistantMessage = React.memo(
+  AssistantMessageComponent,
+  (prev, next) => {
+    // Custom comparison: only re-render when key properties change
+    return (
+      prev.message.id === next.message.id &&
+      prev.message.content === next.message.content &&
+      prev.message.status === next.message.status &&
+      prev.runUsage === next.runUsage &&
+      prev.animate === next.animate
+    );
+  },
+);

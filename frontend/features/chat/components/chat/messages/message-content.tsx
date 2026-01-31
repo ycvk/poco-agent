@@ -30,107 +30,91 @@ const ImgBlock = ({
   return <img src={src} alt={alt} {...props} />;
 };
 
-export function MessageContent({
-  content,
-}: {
-  content: string | MessageBlock[];
-}) {
-  const { t } = useT("translation");
+// Memoized link component
+const MarkdownLink = ({ children, href, ...props }: LinkProps) => (
+  <a
+    className="text-foreground underline underline-offset-4 decoration-muted-foreground/30 hover:decoration-foreground transition-colors"
+    target="_blank"
+    rel="noopener noreferrer"
+    href={href}
+    {...props}
+  >
+    {children}
+  </a>
+);
 
-  // Helper function to extract text content from message
-  const getTextContent = (content: string | MessageBlock[]): string => {
-    const clean = (text: string) => text.replace(/\uFFFD/g, "");
+// Extract markdown components configuration outside component to avoid recreation
+const markdownComponents = {
+  pre: MarkdownPre,
+  code: MarkdownCode,
+  a: MarkdownLink,
+  h1: ({ children }: { children?: React.ReactNode }) => (
+    <h1 className="text-xl font-bold mb-4 mt-6 text-foreground">{children}</h1>
+  ),
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h2 className="text-lg font-bold mb-3 mt-5 text-foreground">{children}</h2>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h3 className="text-base font-bold mb-2 mt-4 text-foreground">
+      {children}
+    </h3>
+  ),
+  hr: () => <hr className="my-4 border-border" />,
+  img: ImgBlock,
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="overflow-x-auto my-4 rounded-lg border border-border">
+      <table className="w-full border-collapse text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }: { children?: React.ReactNode }) => (
+    <thead className="bg-muted/50">{children}</thead>
+  ),
+  tbody: ({ children }: { children?: React.ReactNode }) => (
+    <tbody className="divide-y divide-border">{children}</tbody>
+  ),
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="border-b border-border px-4 py-3 text-left font-semibold text-foreground">
+      {children}
+    </th>
+  ),
+  td: ({ children }: { children?: React.ReactNode }) => (
+    <td className="border-b border-border px-4 py-3 text-foreground">
+      {children}
+    </td>
+  ),
+};
 
-    if (typeof content === "string") {
-      return clean(content);
-    }
-    // If it's an array of blocks, extract text from TextBlock
-    if (Array.isArray(content)) {
-      // This helper is used for copy-paste mainly, so we just want the text parts
-      const textBlocks = content.filter(
-        (block: MessageBlock) => block._type === "TextBlock",
-      );
-      return textBlocks
-        .map((block: MessageBlock) =>
-          block._type === "TextBlock" ? clean(block.text) : "",
-        )
-        .join("\n\n");
-    }
-    return clean(String(content));
-  };
+// Remark plugins array - stable reference
+const remarkPlugins = [remarkGfm, remarkBreaks];
 
-  const textContent = getTextContent(content);
+// Prose class for markdown content
+const proseClass =
+  "prose prose-base dark:prose-invert max-w-none break-words break-all w-full min-w-0 [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_code]:break-words [&_p]:break-words [&_p]:break-all [&_*]:break-words [&_*]:break-all";
 
-  // If content is string, render as before
+// Helper function to extract text content from message
+const getTextContent = (content: string | MessageBlock[]): string => {
+  const clean = (text: string) => text.replace(/\uFFFD/g, "");
+
   if (typeof content === "string") {
-    return (
-      <div className="prose prose-base dark:prose-invert max-w-none break-words break-all w-full min-w-0 [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_code]:break-words [&_p]:break-words [&_p]:break-all [&_*]:break-words [&_*]:break-all">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkBreaks]}
-          components={{
-            pre: MarkdownPre,
-            code: MarkdownCode,
-            a: ({ children, href, ...props }: LinkProps) => (
-              <a
-                className="text-foreground underline underline-offset-4 decoration-muted-foreground/30 hover:decoration-foreground transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-                href={href}
-                {...props}
-              >
-                {children}
-              </a>
-            ),
-            h1: ({ children }) => (
-              <h1 className="text-xl font-bold mb-4 mt-6 text-foreground">
-                {children}
-              </h1>
-            ),
-            h2: ({ children }) => (
-              <h2 className="text-lg font-bold mb-3 mt-5 text-foreground">
-                {children}
-              </h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="text-base font-bold mb-2 mt-4 text-foreground">
-                {children}
-              </h3>
-            ),
-            hr: () => <hr className="my-4 border-border" />,
-            img: ImgBlock,
-            table: ({ children }) => (
-              <div className="overflow-x-auto my-4 rounded-lg border border-border">
-                <table className="w-full border-collapse text-sm">
-                  {children}
-                </table>
-              </div>
-            ),
-            thead: ({ children }) => (
-              <thead className="bg-muted/50">{children}</thead>
-            ),
-            tbody: ({ children }) => (
-              <tbody className="divide-y divide-border">{children}</tbody>
-            ),
-            th: ({ children }) => (
-              <th className="border-b border-border px-4 py-3 text-left font-semibold text-foreground">
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td className="border-b border-border px-4 py-3 text-foreground">
-                {children}
-              </td>
-            ),
-          }}
-        >
-          {textContent}
-        </ReactMarkdown>
-      </div>
-    );
+    return clean(content);
   }
+  if (Array.isArray(content)) {
+    const textBlocks = content.filter(
+      (block: MessageBlock) => block._type === "TextBlock",
+    );
+    return textBlocks
+      .map((block: MessageBlock) =>
+        block._type === "TextBlock" ? clean(block.text) : "",
+      )
+      .join("\n\n");
+  }
+  return clean(String(content));
+};
 
-  // Handle array of blocks (Tools + Text)
-  // We need to group them: sequence of tool blocks -> ToolChain, sequence of text blocks -> Markdown
+// Helper to group blocks by type
+const groupBlocks = (
+  content: MessageBlock[],
+): { type: "text" | "tool" | "thinking"; blocks: MessageBlock[] }[] => {
   const groups: {
     type: "text" | "tool" | "thinking";
     blocks: MessageBlock[];
@@ -155,6 +139,35 @@ export function MessageContent({
     }
     currentGroup.blocks.push(block);
   }
+
+  return groups;
+};
+
+interface MessageContentProps {
+  content: string | MessageBlock[];
+}
+
+const MessageContentComponent = ({ content }: MessageContentProps) => {
+  const { t } = useT("translation");
+
+  const textContent = getTextContent(content);
+
+  // If content is string, render as before
+  if (typeof content === "string") {
+    return (
+      <div className={proseClass}>
+        <ReactMarkdown
+          remarkPlugins={remarkPlugins}
+          components={markdownComponents}
+        >
+          {textContent}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
+  // Handle array of blocks (Tools + Text)
+  const groups = groupBlocks(content);
 
   return (
     <div className="space-y-4 w-full min-w-0">
@@ -182,7 +195,7 @@ export function MessageContent({
               <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-2 select-none">
                 <div className="flex items-center gap-1.5">
                   <Brain className="size-3.5" />
-                  <span>{t("chat.thinkingTitle", "思考过程")}</span>
+                  <span>{t("chat.thinkingTitle")}</span>
                 </div>
               </summary>
               <div className="mt-2 border-t border-border/50 pt-2 text-xs whitespace-pre-wrap break-words break-all font-mono text-foreground/90">
@@ -197,67 +210,10 @@ export function MessageContent({
           if (!text.trim()) return null;
 
           return (
-            <div
-              key={index}
-              className="prose prose-base dark:prose-invert max-w-none break-words break-all w-full min-w-0 [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_code]:break-words [&_p]:break-words [&_p]:break-all [&_*]:break-words [&_*]:break-all"
-            >
+            <div key={index} className={proseClass}>
               <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkBreaks]}
-                components={{
-                  pre: MarkdownPre,
-                  code: MarkdownCode,
-                  a: ({ children, href, ...props }: LinkProps) => (
-                    <a
-                      className="text-foreground underline underline-offset-4 decoration-muted-foreground/30 hover:decoration-foreground transition-colors"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      href={href}
-                      {...props}
-                    >
-                      {children}
-                    </a>
-                  ),
-                  h1: ({ children }) => (
-                    <h1 className="text-xl font-bold mb-4 mt-6 text-foreground">
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-lg font-bold mb-3 mt-5 text-foreground">
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-base font-bold mb-2 mt-4 text-foreground">
-                      {children}
-                    </h3>
-                  ),
-                  hr: () => <hr className="my-4 border-border" />,
-                  img: ImgBlock,
-                  table: ({ children }) => (
-                    <div className="overflow-x-auto my-4 rounded-lg border border-border">
-                      <table className="w-full border-collapse text-sm">
-                        {children}
-                      </table>
-                    </div>
-                  ),
-                  thead: ({ children }) => (
-                    <thead className="bg-muted/50">{children}</thead>
-                  ),
-                  tbody: ({ children }) => (
-                    <tbody className="divide-y divide-border">{children}</tbody>
-                  ),
-                  th: ({ children }) => (
-                    <th className="border-b border-border px-4 py-3 text-left font-semibold text-foreground">
-                      {children}
-                    </th>
-                  ),
-                  td: ({ children }) => (
-                    <td className="border-b border-border px-4 py-3 text-foreground">
-                      {children}
-                    </td>
-                  ),
-                }}
+                remarkPlugins={remarkPlugins}
+                components={markdownComponents}
               >
                 {text}
               </ReactMarkdown>
@@ -267,4 +223,9 @@ export function MessageContent({
       })}
     </div>
   );
-}
+};
+
+export const MessageContent = React.memo(
+  MessageContentComponent,
+  (prev, next) => prev.content === next.content,
+);

@@ -34,6 +34,7 @@
   --color-warning: var(--warning);
   --color-info: var(--info);
   --color-renamed: var(--renamed);
+  --color-highlight: var(--highlight);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -55,78 +56,55 @@
   --radius-4xl: calc(var(--radius) + 16px);
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --radius: 0.5rem;
-  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
-  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
-  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
-  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
-  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
-  --tracking-normal: var(--tracking-normal);
-  --shadow-2xl: var(--shadow-2xl);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-md: var(--shadow-md);
-  --shadow: var(--shadow);
-  --shadow-sm: var(--shadow-sm);
-  --shadow-xs: var(--shadow-xs);
-  --shadow-2xs: var(--shadow-2xs);
-  --spacing: var(--spacing);
-  --letter-spacing: var(--letter-spacing);
-  --shadow-offset-y: var(--shadow-offset-y);
-  --shadow-offset-x: var(--shadow-offset-x);
-  --shadow-spread: var(--shadow-spread);
-  --shadow-blur: var(--shadow-blur);
-  --shadow-opacity: var(--shadow-opacity);
-  --color-shadow-color: var(--shadow-color);
   --color-destructive-foreground: var(--destructive-foreground);
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.9818 0.0054 95.0986);
-  --foreground: oklch(0.3438 0.0269 95.7226);
-  --card: oklch(0.9818 0.0054 95.0986);
-  --card-foreground: oklch(0.1908 0.002 106.5859);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2671 0.0196 98.939);
-  --primary: oklch(0.6171 0.1375 39.0427);
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.006 95);
+  --foreground: oklch(0.22 0.02 260);
+  --card: oklch(0.995 0.004 95);
+  --card-foreground: oklch(0.22 0.02 260);
+  --popover: oklch(0.995 0.004 95);
+  --popover-foreground: oklch(0.22 0.02 260);
+  --primary: oklch(0.4469 0.1366 263.6);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.9245 0.0138 92.9892);
-  --secondary-foreground: oklch(0.4334 0.0177 98.6048);
-  --muted: oklch(0.9341 0.0153 90.239);
-  --muted-foreground: oklch(0.6059 0.0075 97.4233);
-  --accent: oklch(0.9245 0.0138 92.9892);
-  --accent-foreground: oklch(0.2671 0.0196 98.939);
+  --secondary: oklch(0.945 0.005 95);
+  --secondary-foreground: oklch(0.28 0.012 260);
+  --muted: oklch(0.955 0.004 95);
+  --muted-foreground: oklch(0.5 0.01 260);
+  --accent: oklch(0.955 0.004 95);
+  --accent-foreground: oklch(0.24 0.014 260);
   --destructive: oklch(0.6 0.12 25);
   /* Morandi-like semantic colors for status indicators - slightly more saturated for visibility */
   --success: oklch(0.65 0.1 152);
   --warning: oklch(0.7 0.1 86);
   --info: oklch(0.65 0.09 255);
   --renamed: oklch(0.65 0.1 310);
-  --border: oklch(0.8847 0.0069 97.3627);
-  --input: oklch(0.7621 0.0156 98.3528);
-  --ring: oklch(0.6171 0.1375 39.0427);
-  --chart-1: oklch(0.5583 0.1276 42.9956);
-  --chart-2: oklch(0.6898 0.1581 290.4107);
+  --highlight: oklch(0.7483 0.0891 84.17);
+  --border: oklch(0.9 0.006 95);
+  --input: oklch(0.9 0.006 95);
+  --ring: oklch(0.4469 0.1366 263.6);
+  --chart-1: oklch(0.4469 0.1366 263.6);
+  --chart-2: oklch(0.62 0.12 300);
   --chart-3: oklch(0.8816 0.0276 93.128);
   --chart-4: oklch(0.8822 0.0403 298.1792);
-  --chart-5: oklch(0.5608 0.1348 42.0584);
-  --sidebar: oklch(0.9663 0.008 98.8792);
-  --sidebar-foreground: oklch(0.359 0.0051 106.6524);
-  --sidebar-primary: oklch(0.6171 0.1375 39.0427);
-  --sidebar-primary-foreground: oklch(0.9881 0 0);
-  --sidebar-accent: oklch(0.9245 0.0138 92.9892);
-  --sidebar-accent-foreground: oklch(0.325 0 0);
-  --sidebar-border: oklch(0.88 0 0);
-  --sidebar-ring: oklch(0.7731 0 0);
+  --chart-5: oklch(0.64 0.11 160);
+  --sidebar: oklch(0.992 0.004 95);
+  --sidebar-foreground: oklch(0.26 0.018 260);
+  --sidebar-primary: oklch(0.4469 0.1366 263.6);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.945 0.005 95);
+  --sidebar-accent-foreground: oklch(0.24 0.014 260);
+  --sidebar-border: oklch(0.9 0.006 95);
+  --sidebar-ring: oklch(0.62 0.01 260);
   --destructive-foreground: oklch(1 0 0);
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --shadow-color: oklch(0 0 0);
   --shadow-opacity: 0.1;
   --shadow-blur: 3px;
@@ -151,52 +129,51 @@
 }
 
 .dark {
-  --background: oklch(0.2679 0.0036 106.6427);
-  --foreground: oklch(0.8074 0.0142 93.0137);
-  --card: oklch(0.2679 0.0036 106.6427);
-  --card-foreground: oklch(0.9818 0.0054 95.0986);
-  --popover: oklch(0.3085 0.0035 106.6039);
-  --popover-foreground: oklch(0.9211 0.004 106.4781);
-  --primary: oklch(0.6724 0.1308 38.7559);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.9818 0.0054 95.0986);
-  --secondary-foreground: oklch(0.3085 0.0035 106.6039);
-  --muted: oklch(0.2213 0.0038 106.707);
-  --muted-foreground: oklch(0.7713 0.0169 99.0657);
-  --accent: oklch(0.213 0.0078 95.4245);
-  --accent-foreground: oklch(0.9663 0.008 98.8792);
+  --background: oklch(0.13 0.02 260);
+  --foreground: oklch(0.92 0.01 260);
+  --card: oklch(0.17 0.02 260);
+  --card-foreground: oklch(0.94 0.01 260);
+  --popover: oklch(0.19 0.02 260);
+  --popover-foreground: oklch(0.94 0.01 260);
+  --primary: oklch(0.7232 0.1429 265.38);
+  --primary-foreground: oklch(0.14 0.02 260);
+  --secondary: oklch(0.2 0.02 260);
+  --secondary-foreground: oklch(0.86 0.01 260);
+  --muted: oklch(0.2 0.01 260);
+  --muted-foreground: oklch(0.74 0.01 260);
+  --accent: oklch(0.22 0.02 260);
+  --accent-foreground: oklch(0.92 0.01 260);
   --destructive: oklch(0.7 0.12 25);
   /* Morandi-like semantic colors for status indicators - slightly more saturated for visibility */
   --success: oklch(0.75 0.1 152);
   --warning: oklch(0.78 0.1 86);
   --info: oklch(0.75 0.09 255);
   --renamed: oklch(0.75 0.1 310);
-  --border: oklch(0.3618 0.0101 106.8928);
-  --input: oklch(0.4336 0.0113 100.2195);
-  --ring: oklch(0.6724 0.1308 38.7559);
-  --chart-1: oklch(0.5583 0.1276 42.9956);
-  --chart-2: oklch(0.6898 0.1581 290.4107);
-  --chart-3: oklch(0.213 0.0078 95.4245);
+  --highlight: oklch(0.82 0.0959 85.79);
+  --border: oklch(0.26 0.02 260);
+  --input: oklch(0.26 0.02 260);
+  --ring: oklch(0.7232 0.1429 265.38);
+  --chart-1: oklch(0.7232 0.1429 265.38);
+  --chart-2: oklch(0.68 0.13 300);
+  --chart-3: oklch(0.22 0.02 260);
   --chart-4: oklch(0.3074 0.0516 289.323);
-  --chart-5: oklch(0.5608 0.1348 42.0584);
-  --sidebar: oklch(0.2357 0.0024 67.7077);
-  --sidebar-foreground: oklch(0.8074 0.0142 93.0137);
-  --sidebar-primary: oklch(0.325 0 0);
-  --sidebar-primary-foreground: oklch(0.9881 0 0);
-  --sidebar-accent: oklch(0.168 0.002 106.6177);
-  --sidebar-accent-foreground: oklch(0.8074 0.0142 93.0137);
-  --sidebar-border: oklch(0.32 0 0);
-  --sidebar-ring: oklch(0.7731 0 0);
+  --chart-5: oklch(0.74 0.11 160);
+  --sidebar: oklch(0.11 0.02 260);
+  --sidebar-foreground: oklch(0.92 0.01 260);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.18 0.02 260);
+  --sidebar-accent-foreground: oklch(0.92 0.01 260);
+  --sidebar-border: oklch(0.22 0.02 260);
+  --sidebar-ring: oklch(0.62 0.01 260);
   --destructive-foreground: oklch(1 0 0);
-  --radius: 0.5rem;
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+  --radius: 0.75rem;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --shadow-color: oklch(0 0 0);
   --shadow-opacity: 0.1;
   --shadow-blur: 3px;
@@ -230,7 +207,17 @@
   }
 
   body {
-    @apply bg-background text-foreground select-none;
+    --font-sans:
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
+      "Noto Sans", sans-serif;
+    --font-mono:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+      "Courier New", monospace;
+    --font-display:
+      ui-serif, Georgia, Cambria, "Times New Roman", Times, "Songti SC",
+      "Noto Serif SC", serif;
+    @apply bg-background text-foreground font-sans select-text;
     letter-spacing: var(--tracking-normal);
     height: 100%;
     overflow: hidden;
@@ -251,12 +238,46 @@
     display: none;
     /* Chrome, Safari and Opera */
   }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .app-background {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(
+        1200px 640px at 18% 0%,
+        color-mix(in oklab, var(--primary) 10%, transparent),
+        transparent 62%
+      ),
+      radial-gradient(
+        900px 520px at 92% 8%,
+        color-mix(in oklab, var(--primary) 6%, transparent),
+        transparent 64%
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--primary) 4%, transparent),
+        transparent 420px
+      );
+  }
+
+  .app-background::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27240%27%20height%3D%27240%27%20viewBox%3D%270%200%20240%20240%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%27-20%25%27%20y%3D%27-20%25%27%20width%3D%27140%25%27%20height%3D%27140%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.85%27%20numOctaves%3D%274%27%20stitchTiles%3D%27stitch%27/%3E%3C/filter%3E%3Crect%20width%3D%27240%27%20height%3D%27240%27%20filter%3D%27url%28%23n%29%27%20opacity%3D%270.32%27/%3E%3C/svg%3E");
+    opacity: 0.012;
+    mix-blend-mode: soft-light;
+  }
 }
 
 /* 
  * React Doc Viewer Animation Isolation
- * 防止 tw-animate-css 的动画变量影响 react-doc-viewer 的渲染
- * 解决图片闪烁后变透明的问题
+ * Prevent tw-animate-css animation variables from affecting react-doc-viewer.
+ * Fixes an issue where images may flicker and then become transparent.
  */
 #react-doc-viewer,
 #react-doc-viewer * {
@@ -275,7 +296,7 @@
   --tw-exit-blur: 0 !important;
 }
 
-/* 单独允许 loading spinner 的动画 */
+/* Allow loading spinners to keep animating */
 #react-doc-viewer .animate-spin,
 #loading-renderer .animate-spin,
 #loading-renderer svg {
@@ -290,8 +311,8 @@
   align-items: center !important;
   justify-content: center !important;
   gap: 0.5rem !important;
-  background: hsl(var(--background)) !important;
-  border-top: 1px solid hsl(var(--border)) !important;
+  background: var(--background) !important;
+  border-top: 1px solid var(--border) !important;
   padding: 0.5rem 1rem !important;
   overflow: visible !important;
 }
@@ -302,8 +323,8 @@
   margin: 0 !important;
   padding: 0 1rem !important;
   border-radius: var(--radius) !important;
-  background: hsl(var(--muted)) !important;
-  color: hsl(var(--muted-foreground)) !important;
+  background: var(--muted) !important;
+  color: var(--muted-foreground) !important;
   font-size: 0.875rem !important;
   font-weight: 500 !important;
   opacity: 1 !important;
@@ -318,10 +339,10 @@
 }
 
 .swiper-pagination-bullet-active {
-  background: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
-  border-color: hsl(var(--primary)) !important;
-  box-shadow: 0 2px 8px hsl(var(--primary) / 0.25) !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--primary) 25%, transparent) !important;
 }
 
 /* TodoList in-progress animation */

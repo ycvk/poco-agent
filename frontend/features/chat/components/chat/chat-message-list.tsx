@@ -14,6 +14,8 @@ export interface ChatMessageListProps {
   isTyping?: boolean;
   internalContextsByUserMessageId?: Record<string, string[]>;
   runUsageByUserMessageId?: Record<string, UsageResponse | null>;
+  /** Whether this is the initial load of history messages. Used to disable animations. */
+  isInitialLoad?: boolean;
 }
 
 export function ChatMessageList({
@@ -21,6 +23,7 @@ export function ChatMessageList({
   isTyping,
   internalContextsByUserMessageId,
   runUsageByUserMessageId,
+  isInitialLoad = false,
 }: ChatMessageListProps) {
   const { t } = useT("translation");
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -29,6 +32,8 @@ export function ChatMessageList({
   const [isUserScrolling, setIsUserScrolling] = React.useState(false);
   const lastMessageCountRef = React.useRef(messages.length);
   const hasInitializedRef = React.useRef(false);
+  // Track whether initial load animation should be skipped
+  const shouldAnimateRef = React.useRef(!isInitialLoad);
   const [expandedInternalContextIds, setExpandedInternalContextIds] =
     React.useState<Set<string>>(() => new Set());
 
@@ -110,6 +115,10 @@ export function ChatMessageList({
     ) {
       scrollRef.current.scrollIntoView({ behavior: "auto" });
       hasInitializedRef.current = true;
+      // Enable animations after initial load is complete
+      requestAnimationFrame(() => {
+        shouldAnimateRef.current = true;
+      });
     }
   }, [messages]);
 
@@ -207,16 +216,10 @@ export function ChatMessageList({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="text-xs font-medium text-foreground">
-                            {t(
-                              "chat.internalContextInjected",
-                              "内部上下文已注入",
-                            )}
+                            {t("chat.internalContextInjected")}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {t(
-                              "chat.internalContextSubtitle",
-                              "来自技能/系统/工具的消息（不代表你的输入）",
-                            )}
+                            {t("chat.internalContextSubtitle")}
                           </div>
                         </div>
 
@@ -228,12 +231,10 @@ export function ChatMessageList({
                           onClick={() => toggleInternalContext(message.id)}
                         >
                           {expanded
-                            ? t("chat.internalContextHide", "收起")
-                            : t(
-                                "chat.internalContextView",
-                                "查看（{{count}}）",
-                                { count: internalTexts.length },
-                              )}
+                            ? t("chat.internalContextHide")
+                            : t("chat.internalContextView", {
+                                count: internalTexts.length,
+                              })}
                         </Button>
                       </div>
 
@@ -250,7 +251,7 @@ export function ChatMessageList({
                               className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
                               onClick={() => copyInternalContext(internalTexts)}
                             >
-                              {t("chat.internalContextCopy", "复制")}
+                              {t("chat.internalContextCopy")}
                             </Button>
                           </div>
                         </div>
@@ -275,6 +276,7 @@ export function ChatMessageList({
                 key={message.id}
                 message={message}
                 runUsage={runUsage}
+                animate={shouldAnimateRef.current}
               />
             );
           })}
@@ -301,7 +303,7 @@ export function ChatMessageList({
             size="icon"
             onClick={scrollToBottom}
             className="h-10 w-10 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-background"
-            title={t("chat.scrollToLatestMessage", "跳转到最新消息")}
+            title={t("chat.scrollToLatestMessage")}
           >
             <ArrowDown className="h-5 w-5" />
           </Button>

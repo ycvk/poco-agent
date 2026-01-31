@@ -203,21 +203,26 @@ export function useChatMessages({
     ],
   );
 
-  // Load initial messages (no polling - updates come from WebSocket)
+  // Track session ID for detecting session changes
+  const sessionIdRef = useRef<string | null>(null);
+
+  // Load initial messages when session changes (no polling - updates come from WebSocket)
   useEffect(() => {
     if (!session?.session_id) return;
 
-    // Only set loading if it's a NEW session
-    if (lastLoadedSessionIdRef.current !== session.session_id) {
-      setIsLoadingHistory(true);
-      setMessages([]);
-      setIsTyping(false);
-      setInternalContextsByUserMessageId({});
-      realUserMessageIdsRef.current = null;
-      setRunUsageByUserMessageId({});
-      lastMessageIdRef.current = 0;
-      lastLoadedSessionIdRef.current = session.session_id;
-    }
+    // Only run when session ID actually changes
+    if (sessionIdRef.current === session.session_id) return;
+    sessionIdRef.current = session.session_id;
+
+    // Reset state for new session
+    setIsLoadingHistory(true);
+    setMessages([]);
+    setIsTyping(false);
+    setInternalContextsByUserMessageId({});
+    realUserMessageIdsRef.current = null;
+    setRunUsageByUserMessageId({});
+    lastMessageIdRef.current = 0;
+    lastLoadedSessionIdRef.current = session.session_id;
 
     const fetchMessages = async () => {
       try {
@@ -247,21 +252,29 @@ export function useChatMessages({
 
     // Initial fetch
     fetchMessages();
+  }, [session?.session_id, mergeMessages, fetchMessagesWithFilter]);
 
-    // Refresh run usage once the session becomes terminal
+  // Separate effect: Refresh run usage when session becomes terminal
+  const prevStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!session?.session_id) return;
+
+    const currentStatus = session.status;
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = currentStatus;
+
+    // Only refresh when transitioning TO a terminal state
     const isTerminal = ["completed", "failed", "stopped"].includes(
-      session.status,
+      currentStatus,
     );
-    if (isTerminal) {
+    const wasTerminal = prevStatus
+      ? ["completed", "failed", "stopped"].includes(prevStatus)
+      : false;
+
+    if (isTerminal && !wasTerminal) {
       void refreshRealUserMessageIds();
     }
-  }, [
-    session?.session_id,
-    session?.status,
-    mergeMessages,
-    fetchMessagesWithFilter,
-    refreshRealUserMessageIds,
-  ]);
+  }, [session?.session_id, session?.status, refreshRealUserMessageIds]);
 
   // Manage isTyping state based on messages
   useEffect(() => {

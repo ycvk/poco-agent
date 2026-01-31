@@ -5,6 +5,7 @@ import * as React from "react";
 import { useChatCreation } from "@/features/chat/hooks/use-chat-creation";
 import { AVAILABLE_MODELS } from "@/features/home/model/constants";
 import type { ModelInfo } from "@/types";
+import { useT } from "@/lib/i18n/client";
 
 import { ChatHeader } from "../chat/chat-header";
 import { ChatMessageList } from "../chat/chat-message-list";
@@ -17,6 +18,7 @@ export interface ChatContainerProps {
 }
 
 export function ChatContainer({ taskId, isNewChat }: ChatContainerProps) {
+  const { t } = useT("translation");
   const { session, isLoading, addMessage, updateModel } = useChatCreation({
     taskId: taskId || "",
     isNewChat: isNewChat || false,
@@ -29,8 +31,8 @@ export function ChatContainer({ taskId, isNewChat }: ChatContainerProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-muted-foreground">加载中...</div>
+      <div className="flex h-full items-center justify-center">
+        <div className="text-muted-foreground">{t("common.loading")}</div>
       </div>
     );
   }
@@ -59,6 +61,7 @@ export function ChatContainer({ taskId, isNewChat }: ChatContainerProps) {
       <ChatMessageList
         messages={session?.messages || []}
         isTyping={isSending}
+        isInitialLoad
       />
       <ChatInput
         value={inputValue}

@@ -36,6 +36,7 @@ const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || getDefaultWsBaseUrl();
 const HEARTBEAT_INTERVAL = 30000;
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
+const CONNECT_DEBOUNCE_MS = 150;
 
 interface UseSessionWebSocketOptions {
   sessionId: string | null;
@@ -63,6 +64,21 @@ interface UseSessionWebSocketReturn {
   sendJson: (payload: Record<string, unknown>) => void;
 }
 
+// Type for consolidated callbacks ref
+interface CallbacksRef {
+  onSnapshot?: (data: SessionSnapshotData) => void;
+  onStatusChange?: (data: SessionStatusData) => void;
+  onTodoUpdate?: (todos: TodoItem[]) => void;
+  onStatePatch?: (data: SessionPatchData) => void;
+  onUserInputUpdate?: (data: UserInputUpdateData) => void;
+  onWorkspaceExport?: (data: WorkspaceExportData) => void;
+  onWorkspaceFiles?: (data: WorkspaceFilesData) => void;
+  onWorkspaceFileUrl?: (data: WorkspaceFileUrlData) => void;
+  onMessage?: (message: Record<string, unknown>) => void;
+  onNewMessage?: (message: WSMessageData) => void;
+  onReconnect?: () => void;
+}
+
 export function useSessionWebSocket({
   sessionId,
   onSnapshot,
@@ -81,70 +97,53 @@ export function useSessionWebSocket({
   const [connectionState, setConnectionState] =
     useState<ConnectionState>("disconnected");
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  const [lastEvent, setLastEvent] = useState<WSEvent | null>(null);
+
+  // [Optimization 3] Use ref instead of state to avoid re-renders on every message
+  const lastEventRef = useRef<WSEvent | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const connectDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const hadPreviousConnectionRef = useRef(false);
 
-  // Store callbacks in refs to avoid recreating connect function
-  const onSnapshotRef = useRef(onSnapshot);
-  const onStatusChangeRef = useRef(onStatusChange);
-  const onTodoUpdateRef = useRef(onTodoUpdate);
-  const onStatePatchRef = useRef(onStatePatch);
-  const onUserInputUpdateRef = useRef(onUserInputUpdate);
-  const onWorkspaceExportRef = useRef(onWorkspaceExport);
-  const onWorkspaceFilesRef = useRef(onWorkspaceFiles);
-  const onWorkspaceFileUrlRef = useRef(onWorkspaceFileUrl);
-  const onMessageRef = useRef(onMessage);
-  const onNewMessageRef = useRef(onNewMessage);
-  const onReconnectRef = useRef(onReconnect);
+  // [Optimization 4] Consolidated callbacks ref - single object instead of 11 separate refs
+  const callbacksRef = useRef<CallbacksRef>({
+    onSnapshot,
+    onStatusChange,
+    onTodoUpdate,
+    onStatePatch,
+    onUserInputUpdate,
+    onWorkspaceExport,
+    onWorkspaceFiles,
+    onWorkspaceFileUrl,
+    onMessage,
+    onNewMessage,
+    onReconnect,
+  });
 
-  // Update refs when callbacks change
+  // [Optimization 4] Single effect to update all callbacks
   useEffect(() => {
-    onSnapshotRef.current = onSnapshot;
-  }, [onSnapshot]);
+    callbacksRef.current = {
+      onSnapshot,
+      onStatusChange,
+      onTodoUpdate,
+      onStatePatch,
+      onUserInputUpdate,
+      onWorkspaceExport,
+      onWorkspaceFiles,
+      onWorkspaceFileUrl,
+      onMessage,
+      onNewMessage,
+      onReconnect,
+    };
+  });
 
+  // [Optimization 1] Reset hadPreviousConnectionRef when sessionId changes
+  // This fixes the bug where switching sessions would incorrectly trigger onReconnect
   useEffect(() => {
-    onStatusChangeRef.current = onStatusChange;
-  }, [onStatusChange]);
-
-  useEffect(() => {
-    onTodoUpdateRef.current = onTodoUpdate;
-  }, [onTodoUpdate]);
-
-  useEffect(() => {
-    onStatePatchRef.current = onStatePatch;
-  }, [onStatePatch]);
-
-  useEffect(() => {
-    onUserInputUpdateRef.current = onUserInputUpdate;
-  }, [onUserInputUpdate]);
-
-  useEffect(() => {
-    onWorkspaceExportRef.current = onWorkspaceExport;
-  }, [onWorkspaceExport]);
-
-  useEffect(() => {
-    onWorkspaceFilesRef.current = onWorkspaceFiles;
-  }, [onWorkspaceFiles]);
-
-  useEffect(() => {
-    onWorkspaceFileUrlRef.current = onWorkspaceFileUrl;
-  }, [onWorkspaceFileUrl]);
-
-  useEffect(() => {
-    onMessageRef.current = onMessage;
-  }, [onMessage]);
-
-  useEffect(() => {
-    onNewMessageRef.current = onNewMessage;
-  }, [onNewMessage]);
-
-  useEffect(() => {
-    onReconnectRef.current = onReconnect;
-  }, [onReconnect]);
+    hadPreviousConnectionRef.current = false;
+  }, [sessionId]);
 
   const sendJson = useCallback((payload: Record<string, unknown>) => {
     const ws = wsRef.current;
@@ -161,6 +160,10 @@ export function useSessionWebSocket({
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
+    if (connectDebounceRef.current) {
+      clearTimeout(connectDebounceRef.current);
+      connectDebounceRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -170,7 +173,26 @@ export function useSessionWebSocket({
   const connect = useCallback(() => {
     if (!sessionId || !enabled) return;
 
-    cleanup();
+    // Clear any pending debounce or reconnect timers
+    if (connectDebounceRef.current) {
+      clearTimeout(connectDebounceRef.current);
+      connectDebounceRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // Close existing connection if any
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+
     setConnectionState("connecting");
 
     const url = `${WS_BASE_URL}/api/v1/ws/sessions/${sessionId}`;
@@ -183,12 +205,12 @@ export function useSessionWebSocket({
       console.log(`[WS] Connected to session ${sessionId}`);
       setConnectionState("connected");
 
-      // Call onReconnect if this is a reconnection (not first connection)
+      // Call onReconnect only if this is a reconnection (not first connection for this session)
       if (hadPreviousConnectionRef.current) {
         console.log(
           `[WS] Reconnected to session ${sessionId}, fetching missed messages`,
         );
-        onReconnectRef.current?.();
+        callbacksRef.current.onReconnect?.();
       }
       hadPreviousConnectionRef.current = true;
 
@@ -210,51 +232,56 @@ export function useSessionWebSocket({
 
         if (data.type === ("pong" as WSEvent["type"])) return;
 
-        setLastEvent(data);
+        // [Optimization 3] Update ref instead of setState
+        lastEventRef.current = data;
 
         switch (data.type) {
           case "session.snapshot":
-            onSnapshotRef.current?.(
+            callbacksRef.current.onSnapshot?.(
               data.data as unknown as SessionSnapshotData,
             );
             break;
           case "session.status":
-            onStatusChangeRef.current?.(
+            callbacksRef.current.onStatusChange?.(
               data.data as unknown as SessionStatusData,
             );
             break;
           case "session.patch":
-            onStatePatchRef.current?.(data.data as unknown as SessionPatchData);
+            callbacksRef.current.onStatePatch?.(
+              data.data as unknown as SessionPatchData,
+            );
             break;
           case "todo.update":
-            onTodoUpdateRef.current?.(
+            callbacksRef.current.onTodoUpdate?.(
               (data.data as unknown as TodoUpdateData).todos as TodoItem[],
             );
             break;
           case "user_input.update":
-            onUserInputUpdateRef.current?.(
+            callbacksRef.current.onUserInputUpdate?.(
               data.data as unknown as UserInputUpdateData,
             );
             break;
           case "message.new": {
             const messageData = data.data as unknown as WSMessageData;
-            onNewMessageRef.current?.(messageData);
+            callbacksRef.current.onNewMessage?.(messageData);
             // Also call deprecated onMessage for backward compatibility
-            onMessageRef.current?.(data.data as Record<string, unknown>);
+            callbacksRef.current.onMessage?.(
+              data.data as Record<string, unknown>,
+            );
             break;
           }
           case "workspace.export":
-            onWorkspaceExportRef.current?.(
+            callbacksRef.current.onWorkspaceExport?.(
               data.data as unknown as WorkspaceExportData,
             );
             break;
           case "workspace.files":
-            onWorkspaceFilesRef.current?.(
+            callbacksRef.current.onWorkspaceFiles?.(
               data.data as unknown as WorkspaceFilesData,
             );
             break;
           case "workspace.file.url":
-            onWorkspaceFileUrlRef.current?.(
+            callbacksRef.current.onWorkspaceFileUrl?.(
               data.data as unknown as WorkspaceFileUrlData,
             );
             break;
@@ -305,20 +332,27 @@ export function useSessionWebSocket({
         }, RECONNECT_DELAY);
       }
     };
-  }, [sessionId, enabled, cleanup]);
-
-  useEffect(() => {
-    if (sessionId && enabled) {
-      connect();
-    }
-    return cleanup;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, enabled]);
+
+  // [Optimization 2] Main connection effect with debounce
+  useEffect(() => {
+    if (!sessionId || !enabled) {
+      cleanup();
+      return;
+    }
+
+    // Debounce connection to avoid rapid connect/disconnect on fast session switching
+    connectDebounceRef.current = setTimeout(() => {
+      connect();
+    }, CONNECT_DEBOUNCE_MS);
+
+    return cleanup;
+  }, [sessionId, enabled, connect, cleanup]);
 
   return {
     connectionState,
     reconnectAttempts,
-    lastEvent,
+    lastEvent: lastEventRef.current,
     sendJson,
   };
 }

@@ -175,6 +175,7 @@ export function ChatPanel({
             isTyping={showTypingIndicator}
             internalContextsByUserMessageId={internalContextsByUserMessageId}
             runUsageByUserMessageId={runUsageByUserMessageId}
+            isInitialLoad
           />
         )}
       </div>
