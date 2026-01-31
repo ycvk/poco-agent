@@ -45,6 +45,8 @@ function mapSessionToTask(session: SessionResponse): TaskHistoryItem {
     status = "running";
   } else if (apiStatus === "failed" || apiStatus === "error") {
     status = "failed";
+  } else if (apiStatus === "canceled" || apiStatus === "cancelled") {
+    status = "canceled";
   } else if (apiStatus === "pending" || apiStatus === "queued") {
     status = "pending";
   }

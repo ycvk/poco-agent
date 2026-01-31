@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
   sessions: "/sessions",
   sessionsWithTitles: "/sessions/list-with-titles",
   session: (sessionId: string) => `/sessions/${sessionId}`,
+  sessionCancel: (sessionId: string) => `/sessions/${sessionId}/cancel`,
   sessionState: (sessionId: string) => `/sessions/${sessionId}/state`,
   sessionMessages: (sessionId: string) => `/sessions/${sessionId}/messages`,
   sessionMessagesWithFiles: (sessionId: string) =>

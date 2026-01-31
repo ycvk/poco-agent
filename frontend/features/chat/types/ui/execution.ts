@@ -4,7 +4,12 @@
 
 import type { ApiStatePatch } from "../api/callback";
 
-export type ExecutionStatus = "accepted" | "running" | "completed" | "failed";
+export type ExecutionStatus =
+  | "accepted"
+  | "running"
+  | "completed"
+  | "failed"
+  | "canceled";
 
 export type ArtifactType =
   | "text"

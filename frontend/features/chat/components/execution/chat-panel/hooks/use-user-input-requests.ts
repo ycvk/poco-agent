@@ -48,6 +48,7 @@ export function useUserInputRequests(
         window.clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      setRequests([]);
       return;
     }
 

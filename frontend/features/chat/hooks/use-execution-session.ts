@@ -155,7 +155,9 @@ export function useExecutionSession({
   useEffect(() => {
     if (
       session &&
-      ["completed", "failed", "stopped", "cancelled"].includes(session.status)
+      ["completed", "failed", "stopped", "canceled", "cancelled"].includes(
+        session.status,
+      )
     ) {
       // Trigger callback only once when polling stops
       if (!hasStoppedRef.current && onPollingStop) {

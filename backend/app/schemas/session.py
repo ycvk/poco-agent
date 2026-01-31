@@ -71,3 +71,19 @@ class SessionStateResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class SessionCancelRequest(BaseModel):
+    """Request to cancel a session (cancel all unfinished runs)."""
+
+    reason: str | None = None
+
+
+class SessionCancelResponse(BaseModel):
+    """Session cancel response."""
+
+    session_id: UUID
+    status: str
+    canceled_runs: int = 0
+    expired_user_input_requests: int = 0
+    executor_cancelled: bool = False

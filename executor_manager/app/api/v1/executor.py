@@ -26,8 +26,8 @@ async def cancel_task(request: TaskCancelRequest) -> JSONResponse:
     await container_pool.cancel_task(request.session_id)
 
     return Response.success(
-        data={"session_id": request.session_id, "status": "cancelled"},
-        message="Task cancelled successfully",
+        data={"session_id": request.session_id, "status": "canceled"},
+        message="Task canceled successfully",
     )
 
 

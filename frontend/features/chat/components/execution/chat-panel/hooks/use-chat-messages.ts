@@ -238,7 +238,7 @@ export function useChatMessages({
     // Setup polling
     let interval: NodeJS.Timeout;
 
-    const isTerminal = ["completed", "failed", "stopped"].includes(
+    const isTerminal = ["completed", "failed", "stopped", "canceled"].includes(
       session.status,
     );
 

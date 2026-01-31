@@ -19,7 +19,7 @@ interface FileChangeCardProps {
     | "accepted"
     | "completed"
     | "failed"
-    | "cancelled"
+    | "canceled"
     | "stopped";
   onFileClick?: () => void;
 }

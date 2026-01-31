@@ -303,7 +303,11 @@ class CallbackService:
         ):
             update_data["sdk_session_id"] = derived_sdk_session_id
 
-        if callback.status in [CallbackStatus.COMPLETED, CallbackStatus.FAILED]:
+        # Do not override a user-canceled session back to completed/failed.
+        if db_session.status != "canceled" and callback.status in [
+            CallbackStatus.COMPLETED,
+            CallbackStatus.FAILED,
+        ]:
             update_data["status"] = callback.status.value
 
         if callback.state_patch is not None:

@@ -18,7 +18,7 @@ interface ArtifactsPanelProps {
     | "accepted"
     | "completed"
     | "failed"
-    | "cancelled"
+    | "canceled"
     | "stopped";
 }
 

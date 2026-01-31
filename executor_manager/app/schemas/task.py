@@ -74,7 +74,7 @@ class TaskCancelRequest(BaseModel):
     """Cancel task request."""
 
     session_id: str
-    reason: str | None = "User cancelled"
+    reason: str | None = "User canceled"
 
 
 class ContainerDeleteRequest(BaseModel):

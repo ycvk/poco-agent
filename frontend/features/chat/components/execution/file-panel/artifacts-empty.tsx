@@ -10,7 +10,7 @@ interface ArtifactsEmptyProps {
     | "accepted"
     | "completed"
     | "failed"
-    | "cancelled"
+    | "canceled"
     | "stopped";
 }
 

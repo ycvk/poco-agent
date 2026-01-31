@@ -68,7 +68,7 @@ const isActiveStatus = (status?: UseArtifactsOptions["sessionStatus"]) =>
 const isFinishedStatus = (status?: UseArtifactsOptions["sessionStatus"]) =>
   status === "completed" ||
   status === "failed" ||
-  status === "cancelled" ||
+  status === "canceled" ||
   status === "stopped";
 
 const findFileByPath = (
@@ -95,7 +95,7 @@ interface UseArtifactsOptions {
     | "accepted"
     | "completed"
     | "failed"
-    | "cancelled"
+    | "canceled"
     | "stopped";
 }
 
