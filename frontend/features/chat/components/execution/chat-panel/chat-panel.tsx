@@ -23,7 +23,6 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { usePendingMessages } from "./hooks/use-pending-messages";
-import { useUserInputRequests } from "./hooks/use-user-input-requests";
 import { cancelSessionAction } from "@/features/chat/actions/session-actions";
 import type {
   ExecutionSession,
