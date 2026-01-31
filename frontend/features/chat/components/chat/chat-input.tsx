@@ -86,7 +86,7 @@ export function ChatInput({
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(t("hero.toasts.fileTooLarge", "文件过大，最大支持 100MB"));
+      toast.error(t("hero.toasts.fileTooLarge"));
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -97,11 +97,11 @@ export function ChatInput({
       setIsUploading(true);
       const uploadedFile = await uploadAttachment(file);
       setAttachments((prev) => [...prev, uploadedFile]);
-      toast.success(t("hero.toasts.uploadSuccess", "文件上传成功"));
+      toast.success(t("hero.toasts.uploadSuccess"));
       playFileUploadSound();
     } catch (error) {
       console.error("Upload failed:", error);
-      toast.error(t("hero.toasts.uploadFailed", "文件上传失败"));
+      toast.error(t("hero.toasts.uploadFailed"));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -121,7 +121,7 @@ export function ChatInput({
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(t("hero.toasts.fileTooLarge", "文件过大，最大支持 100MB"));
+      toast.error(t("hero.toasts.fileTooLarge"));
       return;
     }
 
@@ -129,11 +129,11 @@ export function ChatInput({
       setIsUploading(true);
       const uploadedFile = await uploadAttachment(file);
       setAttachments((prev) => [...prev, uploadedFile]);
-      toast.success(t("hero.toasts.uploadSuccess", "文件上传成功"));
+      toast.success(t("hero.toasts.uploadSuccess"));
       playFileUploadSound();
     } catch (error) {
       console.error("Upload failed:", error);
-      toast.error(t("hero.toasts.uploadFailed", "文件上传失败"));
+      toast.error(t("hero.toasts.uploadFailed"));
     } finally {
       setIsUploading(false);
     }
@@ -152,7 +152,7 @@ export function ChatInput({
           className="hidden"
           onChange={handleFileSelect}
         />
-        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
           {/* Attachments */}
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 px-4 pt-4">
@@ -289,7 +289,9 @@ export function ChatInput({
                             <span>{connector.title}</span>
                           </div>
                           {/* TODO: Implement connection logic */}
-                          <span className="text-xs font-medium">连接</span>
+                          <span className="text-xs font-medium">
+                            {t("hero.connect")}
+                          </span>
                         </div>
                       </DropdownMenuItem>
                     ));
@@ -330,7 +332,8 @@ export function ChatInput({
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Enter {t("hints.send")}，Shift + Enter {t("hints.newLine")}
+          Enter {t("hints.send")}
+          {t("hints.separator")}Shift + Enter {t("hints.newLine")}
         </p>
       </div>
     </div>

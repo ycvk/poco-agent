@@ -10,43 +10,45 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import type { UsageStats } from "@/types";
+import { useT } from "@/lib/i18n/client";
 
 interface UsageTooltipProps {
   stats: UsageStats;
 }
 
 export function UsageTooltip({ stats }: UsageTooltipProps) {
+  const { t } = useT("translation");
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}分${secs}秒`;
+    return t("usage.duration", { minutes: mins, seconds: secs });
   };
 
   return (
     <Tooltip>
       <TooltipTrigger>
         <div className="flex items-center gap-2 cursor-help">
-          <Coins className="size-4 text-amber-500" />
+          <Coins className="size-4 text-primary" />
           <span className="font-medium">{stats.credits.toLocaleString()}</span>
         </div>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="w-72">
         <div className="space-y-3">
           <div className="font-medium text-sm">
-            Credits: {stats.credits.toLocaleString()}
+            {t("userMenu.credits")}: {stats.credits.toLocaleString()}
           </div>
           <Separator />
           <div>
-            <div className="text-sm font-medium mb-2">本次会话:</div>
+            <div className="text-sm font-medium mb-2">{t("usage.thisSession")}:</div>
             <div className="text-xs space-y-1 text-muted-foreground">
               <div className="flex justify-between">
-                <span>Tokens:</span>
+                <span>{t("chat.tokens")}:</span>
                 <span className="font-medium text-foreground">
                   {stats.tokensUsed.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>耗时:</span>
+                <span>{t("chat.duration")}:</span>
                 <span className="font-medium text-foreground">
                   {formatDuration(stats.duration)}
                 </span>
@@ -55,24 +57,24 @@ export function UsageTooltip({ stats }: UsageTooltipProps) {
           </div>
           <Separator />
           <div>
-            <div className="text-sm font-medium mb-2">使用统计:</div>
+            <div className="text-sm font-medium mb-2">{t("usage.usageStats")}:</div>
             <div className="text-xs space-y-1 text-muted-foreground">
               <div className="flex justify-between">
-                <span>今日:</span>
+                <span>{t("usage.today")}:</span>
                 <span className="font-medium text-foreground">
-                  {stats.todayUsage.toLocaleString()} tokens
+                  {stats.todayUsage.toLocaleString()} {t("usage.tokensUnit")}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>本周:</span>
+                <span>{t("usage.week")}:</span>
                 <span className="font-medium text-foreground">
-                  {stats.weekUsage.toLocaleString()} tokens
+                  {stats.weekUsage.toLocaleString()} {t("usage.tokensUnit")}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>本月:</span>
+                <span>{t("usage.month")}:</span>
                 <span className="font-medium text-foreground">
-                  {stats.monthUsage.toLocaleString()} tokens
+                  {stats.monthUsage.toLocaleString()} {t("usage.tokensUnit")}
                 </span>
               </div>
             </div>
