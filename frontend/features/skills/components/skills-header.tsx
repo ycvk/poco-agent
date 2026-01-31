@@ -21,7 +21,7 @@ export function SkillsHeader({ onImport }: SkillsHeaderProps) {
   const backPath = fromHome ? `/${lng}/home` : `/${lng}/capabilities`;
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border/50 bg-background/50 px-6 backdrop-blur-sm sticky top-0 z-10">
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-6">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"

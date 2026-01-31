@@ -9,7 +9,7 @@ export function CapabilitiesHeader() {
   const { t } = useT("translation");
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border/50 bg-background/50 px-6 backdrop-blur-sm sticky top-0 z-10">
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-6">
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center p-2 rounded-lg bg-muted text-foreground">
           <Sparkles className="size-5" />
