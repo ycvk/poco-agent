@@ -22,6 +22,7 @@
     "shareDesc": "Get 500 points each",
     "user": "User",
     "removeFromProject": "Remove from project",
+    "bulkActions": "Bulk actions",
     "plan": "Pro Plan"
   },
   "header": {
@@ -40,6 +41,13 @@
     "send": "Send",
     "placeholder": "Assign a task or ask any question",
     "tools": "Connect your tools to Poco",
+    "toolsPanel": {
+      "emptyMcp": "No MCP installed",
+      "emptySkills": "No skills installed",
+      "apps": "Apps",
+      "unknownMcp": "MCP #{{id}}",
+      "unknownSkill": "Skill #{{id}}"
+    },
     "importLocal": "Import from local file",
     "importFigma": "Import from Figma (coming soon)",
     "connect": "Connect",
@@ -175,12 +183,45 @@
     "internalContextView": "View ({{count}})",
     "internalContextHide": "Hide",
     "internalContextCopy": "Copy",
+    "copyMessage": "Copy message",
+    "likeResponse": "Like response",
     "thinkingTitle": "Thinking",
     "toolExecution": "Tool Execution",
     "subagentTranscript": "Subagent transcript",
     "input": "Input",
     "output": "Output",
-    "scrollToLatestMessage": "Jump to latest message"
+    "scrollToLatestMessage": "Jump to latest message",
+    "conversationHistory": {
+      "title": "Conversation history",
+      "empty": "No history yet",
+      "session": "Session {{id}}",
+      "status": "Status: {{status}}"
+    },
+    "statusBar": {
+      "skillsConfigured": "Skills configured",
+      "skillsUsed": "Skills used",
+      "mcpConfigured": "MCP configured",
+      "mcpServers": "MCP servers"
+    },
+    "artifacts": {
+      "title": "Artifacts",
+      "previewTitle": "Document preview",
+      "description": "Workspace preview",
+      "sidebar": {
+        "title": "Files",
+        "empty": "No files"
+      },
+      "actions": {
+        "downloadArchive": "Download workspace archive",
+        "collapseSidebar": "Collapse file sidebar",
+        "expandSidebar": "Expand file sidebar"
+      },
+      "toasts": {
+        "downloadStarted": "Downloading workspace archive",
+        "archiveUnavailable": "Archive is not available yet",
+        "downloadFailed": "Download failed"
+      }
+    }
   },
   "status": {
     "pending": "Pending",
@@ -199,6 +240,11 @@
     "modified": "Modified",
     "deleted": "Deleted",
     "renamed": "Renamed",
+    "preview": "Preview file",
+    "previewDisabled": "Preview unavailable while running",
+    "linesAdded": "lines added",
+    "linesDeleted": "lines deleted",
+    "totalLineChanges": "Total {{count}} line changes",
     "showDiff": "Show Diff",
     "hideDiff": "Hide Diff"
   },
@@ -240,6 +286,7 @@
     },
     "summary": {
       "total": "Total",
+      "totalFiles": "files",
       "added": "Added",
       "modified": "Modified",
       "deleted": "Deleted",
@@ -703,6 +750,7 @@
   },
   "userMenu": {
     "credits": "Credits",
+    "unlimited": "Unlimited",
     "home": "Home",
     "settings": "Settings",
     "logout": "Log out"
@@ -710,14 +758,28 @@
   "pending": {
     "queued": "Queued",
     "pending": "Pending",
+    "attachmentsCount": "[+{{count}} files]",
     "modify": "Edit",
     "send": "Send Immediately",
     "delete": "Delete"
+  },
+  "usage": {
+    "thisSession": "This session",
+    "usageStats": "Usage",
+    "today": "Today",
+    "week": "This week",
+    "month": "This month",
+    "duration": "{{minutes}}m {{seconds}}s",
+    "tokensUnit": "tokens"
   },
   "common": {
     "cancel": "Cancel",
     "create": "Create",
     "delete": "Delete",
-    "save": "Save"
+    "loading": "Loading…",
+    "save": "Save",
+    "syncing": "Syncing…",
+    "toggleTheme": "Toggle theme",
+    "temporarilyUnavailableLabel": "{{name}} (temporarily unavailable)"
   }
 }

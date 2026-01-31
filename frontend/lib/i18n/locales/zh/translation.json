@@ -22,6 +22,7 @@
     "shareDesc": "各得 500 积分",
     "user": "用户",
     "removeFromProject": "移出项目",
+    "bulkActions": "批量操作",
     "plan": "专业版"
   },
   "header": {
@@ -40,6 +41,13 @@
     "send": "发送",
     "placeholder": "分配一个任务或提出任何问题",
     "tools": "将你的工具连接到 Poco",
+    "toolsPanel": {
+      "emptyMcp": "未安装 MCP",
+      "emptySkills": "未安装技能",
+      "apps": "应用",
+      "unknownMcp": "MCP #{{id}}",
+      "unknownSkill": "Skill #{{id}}"
+    },
     "importLocal": "从本地文件导入",
     "importFigma": "从 Figma 导入 (即将推出)",
     "connect": "连接",
@@ -175,12 +183,45 @@
     "internalContextView": "查看（{{count}}）",
     "internalContextHide": "收起",
     "internalContextCopy": "复制",
+    "copyMessage": "复制消息",
+    "likeResponse": "点赞回复",
     "thinkingTitle": "思考过程",
     "toolExecution": "工具执行",
     "subagentTranscript": "子代理过程",
     "input": "输入",
     "output": "输出",
-    "scrollToLatestMessage": "跳转到最新消息"
+    "scrollToLatestMessage": "跳转到最新消息",
+    "conversationHistory": {
+      "title": "对话历史",
+      "empty": "暂无历史记录",
+      "session": "会话 {{id}}",
+      "status": "状态: {{status}}"
+    },
+    "statusBar": {
+      "skillsConfigured": "技能配置",
+      "skillsUsed": "技能使用",
+      "mcpConfigured": "MCP 服务器配置",
+      "mcpServers": "MCP 服务器"
+    },
+    "artifacts": {
+      "title": "文件变更",
+      "previewTitle": "文档预览",
+      "description": "工作区文件预览",
+      "sidebar": {
+        "title": "文件列表",
+        "empty": "暂无文件"
+      },
+      "actions": {
+        "downloadArchive": "下载工作区归档",
+        "collapseSidebar": "折叠文件侧边栏",
+        "expandSidebar": "展开文件侧边栏"
+      },
+      "toasts": {
+        "downloadStarted": "开始下载工作区归档",
+        "archiveUnavailable": "归档文件暂不可用",
+        "downloadFailed": "下载失败"
+      }
+    }
   },
   "status": {
     "pending": "待处理",
@@ -199,6 +240,11 @@
     "modified": "修改",
     "deleted": "删除",
     "renamed": "重命名",
+    "preview": "预览文件",
+    "previewDisabled": "执行中，暂不可预览",
+    "linesAdded": "行新增",
+    "linesDeleted": "行删除",
+    "totalLineChanges": "共 {{count}} 行变更",
     "showDiff": "查看 Diff",
     "hideDiff": "隐藏 Diff"
   },
@@ -240,6 +286,7 @@
     },
     "summary": {
       "total": "总计",
+      "totalFiles": "个文件",
       "added": "新增",
       "modified": "修改",
       "deleted": "删除",
@@ -703,6 +750,7 @@
   },
   "userMenu": {
     "credits": "积分",
+    "unlimited": "余量无限",
     "home": "项目官网",
     "settings": "设置",
     "logout": "退出登录"
@@ -710,14 +758,28 @@
   "pending": {
     "queued": "个排队中",
     "pending": "等待中",
+    "attachmentsCount": "[+{{count}} 文件]",
     "modify": "修改",
     "send": "立即发送",
     "delete": "删除"
+  },
+  "usage": {
+    "thisSession": "本次会话",
+    "usageStats": "使用统计",
+    "today": "今日",
+    "week": "本周",
+    "month": "本月",
+    "duration": "{{minutes}}分{{seconds}}秒",
+    "tokensUnit": "Token"
   },
   "common": {
     "cancel": "取消",
     "create": "创建",
     "delete": "删除",
-    "save": "保存"
+    "loading": "加载中…",
+    "save": "保存",
+    "syncing": "同步中…",
+    "toggleTheme": "切换主题",
+    "temporarilyUnavailableLabel": "{{name}}（暂不可用）"
   }
 }
