@@ -59,7 +59,6 @@ export function FeatureCard({
                 "px-3 py-1 text-xs font-medium tracking-wide",
                 "rounded-full border border-border/50",
                 "bg-muted/50 text-muted-foreground",
-                "backdrop-blur-sm",
               )}
             >
               {badge}
