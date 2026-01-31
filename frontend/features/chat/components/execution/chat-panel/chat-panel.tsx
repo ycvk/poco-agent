@@ -170,6 +170,9 @@ export function ChatPanel({
     }
   };
 
+  // Extract fileChanges from session state
+  const fileChanges = session?.state_patch?.workspace_state?.file_changes;
+
   // Condition checks for UI sections
   const hasTodos = statePatch?.todos && statePatch.todos.length > 0;
   // Check for config snapshot or runtime data
@@ -221,6 +224,7 @@ export function ChatPanel({
             internalContextsByUserMessageId={internalContextsByUserMessageId}
             runUsageByUserMessageId={runUsageByUserMessageId}
             isInitialLoad
+            fileChanges={fileChanges}
           />
         )}
       </div>
