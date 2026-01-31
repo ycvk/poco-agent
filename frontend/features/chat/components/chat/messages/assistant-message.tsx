@@ -4,10 +4,12 @@ import * as React from "react";
 import { Bot, Copy, ThumbsUp, Check } from "lucide-react";
 import { MessageContent } from "./message-content";
 import { TypingIndicator } from "./typing-indicator";
+import { FileChangesSummaryCard } from "./file-changes-summary-card";
 import type {
   ChatMessage,
   MessageBlock,
   UsageResponse,
+  FileChange,
 } from "@/features/chat/types";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n/client";
@@ -18,6 +20,7 @@ interface AssistantMessageProps {
   runUsage?: UsageResponse | null;
   /** Whether to animate the message entrance. Defaults to true. */
   animate?: boolean;
+  fileChanges?: FileChange[];
 }
 
 function pickNumber(value: unknown): number | null {
@@ -42,6 +45,7 @@ const AssistantMessageComponent = ({
   message,
   runUsage,
   animate = true,
+  fileChanges,
 }: AssistantMessageProps) => {
   const { t } = useT("translation");
   const [isCopied, setIsCopied] = React.useState(false);
@@ -143,6 +147,9 @@ const AssistantMessageComponent = ({
         <div className="text-foreground text-base break-words w-full min-w-0">
           <MessageContent content={message.content} />
           {message.status === "streaming" && <TypingIndicator />}
+          {fileChanges && fileChanges.length > 0 && (
+            <FileChangesSummaryCard fileChanges={fileChanges} />
+          )}
         </div>
 
         {/* Action Buttons - Visible on hover */}
@@ -204,7 +211,8 @@ export const AssistantMessage = React.memo(
       prev.message.content === next.message.content &&
       prev.message.status === next.message.status &&
       prev.runUsage === next.runUsage &&
-      prev.animate === next.animate
+      prev.animate === next.animate &&
+      prev.fileChanges === next.fileChanges
     );
   },
 );
