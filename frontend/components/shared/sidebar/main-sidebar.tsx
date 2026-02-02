@@ -406,8 +406,9 @@ export function MainSidebar({
       onDragEnd={handleDragEnd}
     >
       <Sidebar
+        variant="floating"
         collapsible="icon"
-        className="border-r-0 bg-sidebar overflow-hidden"
+        className="bg-transparent"
       >
         <SidebarHeader className="gap-2 pb-2">
           {/* Logo 和折叠按钮 */}

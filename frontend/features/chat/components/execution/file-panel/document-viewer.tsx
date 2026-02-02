@@ -22,6 +22,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { MarkdownCode, MarkdownPre } from "@/components/shared/markdown-code";
 import { SyntaxHighlighter, oneDark, oneLight } from "@/lib/markdown/prism";
+import { resolveDocumentViewerKind } from "./document-viewer-mode";
 
 const dispatchCloseViewer = () => {
   if (typeof window === "undefined") return;
@@ -273,6 +274,8 @@ interface ViewerToolbarProps {
   onCopy?: () => void;
   copyDisabled?: boolean;
   copyState?: "idle" | "copied";
+  showBackButton?: boolean;
+  onBack?: () => void;
 }
 
 const DocumentViewerToolbar = ({
@@ -283,17 +286,21 @@ const DocumentViewerToolbar = ({
   onCopy,
   copyDisabled,
   copyState = "idle",
+  showBackButton = true,
+  onBack,
 }: ViewerToolbarProps) => (
   <div className="w-full border-b px-3 py-2 text-xs text-muted-foreground sm:px-4 overflow-hidden">
     <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-8 w-8 shrink-0"
-        onClick={dispatchCloseViewer}
-      >
-        <ChevronLeft className="size-4" />
-      </Button>
+      {showBackButton && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 shrink-0"
+          onClick={onBack ?? dispatchCloseViewer}
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+      )}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <span
           className="text-sm font-medium text-foreground min-w-0 max-w-full truncate overflow-hidden"
@@ -352,6 +359,8 @@ interface TextDocumentViewerProps {
   language?: string;
   resolvedUrl?: string;
   ensureFreshFile?: (file: FileNode) => Promise<FileNode | undefined>;
+  showBackButton?: boolean;
+  onBack?: () => void;
 }
 
 const TextDocumentViewer = ({
@@ -359,6 +368,8 @@ const TextDocumentViewer = ({
   language = DEFAULT_TEXT_LANGUAGE,
   resolvedUrl,
   ensureFreshFile,
+  showBackButton,
+  onBack,
 }: TextDocumentViewerProps) => {
   const { t } = useT("translation");
   const { resolvedTheme } = useTheme();
@@ -461,6 +472,8 @@ const TextDocumentViewer = ({
         onCopy={handleCopy}
         copyDisabled={false}
         copyState={copyState}
+        showBackButton={showBackButton}
+        onBack={onBack}
       />
       <div className="flex-1 overflow-auto min-h-0 p-4">
         <SyntaxHighlighter
@@ -508,15 +521,21 @@ const TextDocumentViewer = ({
   );
 };
 
+interface MarkdownDocumentViewerProps {
+  file: FileNode;
+  resolvedUrl?: string;
+  ensureFreshFile?: (file: FileNode) => Promise<FileNode | undefined>;
+  showBackButton?: boolean;
+  onBack?: () => void;
+}
+
 const MarkdownDocumentViewer = ({
   file,
   resolvedUrl,
   ensureFreshFile,
-}: {
-  file: FileNode;
-  resolvedUrl?: string;
-  ensureFreshFile?: (file: FileNode) => Promise<FileNode | undefined>;
-}) => {
+  showBackButton,
+  onBack,
+}: MarkdownDocumentViewerProps) => {
   const { t } = useT("translation");
   const { state, refetch } = useFileTextContent({
     file,
@@ -613,6 +632,8 @@ const MarkdownDocumentViewer = ({
         onCopy={handleCopy}
         copyDisabled={false}
         copyState={copyState}
+        showBackButton={showBackButton}
+        onBack={onBack}
       />
       <div className="flex-1 overflow-auto bg-background min-h-0">
         <div className="mx-auto w-full max-w-4xl px-6 py-8">
@@ -689,11 +710,17 @@ const MarkdownDocumentViewer = ({
 interface DocumentViewerProps {
   file?: FileNode;
   ensureFreshFile?: (file: FileNode) => Promise<FileNode | undefined>;
+  showBackButton?: boolean;
+  onBack?: () => void;
+  mode?: "preview" | "source";
 }
 
 const DocumentViewerComponent = ({
   file,
   ensureFreshFile,
+  showBackButton = true,
+  onBack,
+  mode = "preview",
 }: DocumentViewerProps) => {
   const { t } = useT("translation");
 
@@ -723,6 +750,12 @@ const DocumentViewerComponent = ({
   const extension = extractExtension(file);
   const docType = DOC_VIEWER_TYPE_MAP[extension];
   const textLanguage = getTextLanguage(extension, file.mimeType);
+  const viewerKind = resolveDocumentViewerKind({
+    mode,
+    extension,
+    hasDocType: Boolean(docType),
+    textLanguage,
+  });
 
   const handleDownload = async () => {
     const refreshed = ensureFreshFile ? await ensureFreshFile(file) : file;
@@ -734,7 +767,7 @@ const DocumentViewerComponent = ({
     link.click();
   };
 
-  if (extension === "html" || extension === "htm") {
+  if (viewerKind === "htmlPreview") {
     return (
       <div
         className={cn(
@@ -744,9 +777,11 @@ const DocumentViewerComponent = ({
       >
         <DocumentViewerToolbar
           file={file}
-          subtitle="HTML PREVIEW"
+          subtitle={t("artifacts.viewer.htmlPreview")}
           resolvedUrl={resolvedUrl}
           onDownload={handleDownload}
+          showBackButton={showBackButton}
+          onBack={onBack}
         />
         <iframe
           src={resolvedUrl}
@@ -758,7 +793,7 @@ const DocumentViewerComponent = ({
     );
   }
 
-  if (docType) {
+  if (viewerKind === "docPreview" && docType) {
     const subtitle = (extension || docType).toUpperCase();
     const documentUri = resolvedUrl || file.url!;
     return (
@@ -773,6 +808,8 @@ const DocumentViewerComponent = ({
           subtitle={subtitle}
           resolvedUrl={documentUri}
           onDownload={handleDownload}
+          showBackButton={showBackButton}
+          onBack={onBack}
         />
         <div className="flex-1 overflow-hidden bg-black/5">
           <DocViewer
@@ -786,23 +823,73 @@ const DocumentViewerComponent = ({
     );
   }
 
-  if (textLanguage === "markdown") {
+  if (viewerKind === "markdownPreview") {
     return (
       <MarkdownDocumentViewer
         file={file}
         resolvedUrl={resolvedUrl}
         ensureFreshFile={ensureFreshFile}
+        showBackButton={showBackButton}
+        onBack={onBack}
       />
     );
   }
 
-  if (textLanguage) {
+  if (viewerKind === "text") {
     return (
       <TextDocumentViewer
         file={file}
         language={textLanguage}
         resolvedUrl={resolvedUrl}
         ensureFreshFile={ensureFreshFile}
+        showBackButton={showBackButton}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (viewerKind === "sourceUnsupported") {
+    return (
+      <StatusLayout
+        icon={File}
+        title={t("artifacts.viewer.sourceNotSupported")}
+        desc={file.name}
+        action={
+          resolvedUrl && (
+            <div className="flex gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  const open = async () => {
+                    const refreshed = ensureFreshFile
+                      ? await ensureFreshFile(file)
+                      : file;
+                    const url = ensureAbsoluteUrl(refreshed?.url ?? resolvedUrl);
+                    if (!url) return;
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  };
+                  void open();
+                }}
+              >
+                <ExternalLink className="size-4" />
+                {t("artifacts.viewer.openInNewWindow")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  void handleDownload();
+                }}
+              >
+                <Download className="size-4" />
+                {t("artifacts.viewer.downloadOriginal")}
+              </Button>
+            </div>
+          )
+        }
       />
     );
   }

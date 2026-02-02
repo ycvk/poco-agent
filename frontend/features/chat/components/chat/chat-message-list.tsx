@@ -40,7 +40,8 @@ export function ChatMessageList({
   const lastMessageCountRef = React.useRef(messages.length);
   const hasInitializedRef = React.useRef(false);
   // Track whether initial load animation should be skipped
-  const shouldAnimateRef = React.useRef(!isInitialLoad);
+  // Use state instead of ref to avoid accessing ref during render
+  const [shouldAnimate, setShouldAnimate] = React.useState(!isInitialLoad);
   const [expandedInternalContextIds, setExpandedInternalContextIds] =
     React.useState<Set<string>>(() => new Set());
 
@@ -124,7 +125,7 @@ export function ChatMessageList({
       hasInitializedRef.current = true;
       // Enable animations after initial load is complete
       requestAnimationFrame(() => {
-        shouldAnimateRef.current = true;
+        setShouldAnimate(true);
       });
     }
   }, [messages]);
@@ -288,7 +289,7 @@ export function ChatMessageList({
                 key={message.id}
                 message={message}
                 runUsage={runUsage}
-                animate={shouldAnimateRef.current}
+                animate={shouldAnimate}
                 fileChanges={
                   index === lastAssistantMessageIndex ? fileChanges : undefined
                 }

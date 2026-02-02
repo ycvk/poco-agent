@@ -60,7 +60,8 @@ interface UseSessionWebSocketOptions {
 interface UseSessionWebSocketReturn {
   connectionState: ConnectionState;
   reconnectAttempts: number;
-  lastEvent: WSEvent | null;
+  /** Returns the last event. Use this in event handlers or effects, not during render. */
+  getLastEvent: () => WSEvent | null;
   sendJson: (payload: Record<string, unknown>) => void;
 }
 
@@ -150,6 +151,8 @@ export function useSessionWebSocket({
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify(payload));
   }, []);
+
+  const connectRef = useRef<(() => void) | null>(null);
 
   const cleanup = useCallback(() => {
     if (heartbeatRef.current) {
@@ -325,7 +328,7 @@ export function useSessionWebSocket({
         reconnectTimeoutRef.current = setTimeout(() => {
           setReconnectAttempts((prev) => {
             if (prev < MAX_RECONNECT_ATTEMPTS) {
-              connect();
+              connectRef.current?.();
             }
             return prev + 1;
           });
@@ -333,6 +336,11 @@ export function useSessionWebSocket({
       }
     };
   }, [sessionId, enabled]);
+
+  // Keep connectRef in sync with connect function
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   // [Optimization 2] Main connection effect with debounce
   useEffect(() => {
@@ -349,10 +357,13 @@ export function useSessionWebSocket({
     return cleanup;
   }, [sessionId, enabled, connect, cleanup]);
 
+  // Getter function for lastEvent to avoid accessing ref during render
+  const getLastEvent = useCallback(() => lastEventRef.current, []);
+
   return {
     connectionState,
     reconnectAttempts,
-    lastEvent: lastEventRef.current,
+    getLastEvent,
     sendJson,
   };
 }

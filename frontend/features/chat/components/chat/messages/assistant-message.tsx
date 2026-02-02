@@ -41,6 +41,37 @@ function formatDurationMs(value: number | null | undefined): string | null {
   return seconds >= 60 ? `${Math.round(seconds)}s` : `${seconds.toFixed(1)}s`;
 }
 
+/**
+ * Check if message has visible content to render.
+ * Returns true if there's text, tool blocks, or thinking blocks.
+ */
+function hasVisibleContent(content: string | MessageBlock[]): boolean {
+  if (typeof content === "string") {
+    return content.trim().length > 0;
+  }
+
+  if (!Array.isArray(content) || content.length === 0) {
+    return false;
+  }
+
+  for (const block of content) {
+    if (block._type === "TextBlock" && block.text?.trim()) {
+      return true;
+    }
+    if (block._type === "ToolUseBlock") {
+      return true;
+    }
+    if (block._type === "ToolResultBlock") {
+      return true;
+    }
+    if (block._type === "ThinkingBlock" && block.thinking?.trim()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const AssistantMessageComponent = ({
   message,
   runUsage,
@@ -50,6 +81,16 @@ const AssistantMessageComponent = ({
   const { t } = useT("translation");
   const [isCopied, setIsCopied] = React.useState(false);
   const [isLiked, setIsLiked] = React.useState(false);
+
+  // Check if message has visible content
+  const isStreaming = message.status === "streaming";
+  const hasContent = hasVisibleContent(message.content);
+  const hasFileChanges = fileChanges && fileChanges.length > 0;
+
+  // Don't render if no visible content (unless streaming or has file changes)
+  if (!hasContent && !isStreaming && !hasFileChanges) {
+    return null;
+  }
 
   // Helper function to extract text content from message
   const getTextContent = (content: string | MessageBlock[]): string => {

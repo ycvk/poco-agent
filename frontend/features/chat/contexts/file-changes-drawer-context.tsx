@@ -5,9 +5,9 @@ import type { FileChange } from "@/features/chat/types";
 
 // Constants for drawer width management
 export const DRAWER_WIDTH_KEY = "file-changes-drawer-width";
-export const DEFAULT_DRAWER_WIDTH = 500;
-export const MIN_DRAWER_WIDTH = 400;
-export const MAX_DRAWER_WIDTH_PERCENT = 0.7;
+export const DEFAULT_DRAWER_WIDTH = 800;
+export const MIN_DRAWER_WIDTH = 480;
+export const MAX_DRAWER_WIDTH_PERCENT = 0.85;
 
 type FileChangesDrawerContextValue = {
   isOpen: boolean;
@@ -61,15 +61,25 @@ export function FileChangesDrawerProvider({
     if (saved) {
       const parsed = parseInt(saved, 10);
       if (!Number.isNaN(parsed)) {
+        const isLegacyDefault = parsed === 500;
+        if (isLegacyDefault) {
+          const next = clampWidth(Math.round(window.innerWidth * 0.6));
+          setDrawerWidthState(next);
+          localStorage.setItem(DRAWER_WIDTH_KEY, String(next));
+          return;
+        }
         setDrawerWidthState(clampWidth(parsed));
       }
+      return;
     }
+
+    setDrawerWidthState(clampWidth(Math.round(window.innerWidth * 0.6)));
   }, []);
 
   const openDrawer = React.useCallback(
     (changes: FileChange[], path?: string) => {
       setFileChanges(changes);
-      setSelectedPathState(path ?? null);
+      setSelectedPathState(path ?? changes[0]?.path ?? null);
       setIsOpen(true);
     },
     [],

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MessageSquare, Loader2 } from "lucide-react";
+import { MessageSquare, Loader2, FolderGit2 } from "lucide-react";
 import { ChatMessageList } from "../../chat/chat-message-list";
 import { TodoList } from "./todo-list";
 import { StatusBar } from "./status-bar";
@@ -20,10 +20,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { usePendingMessages } from "./hooks/use-pending-messages";
 import { cancelSessionAction } from "@/features/chat/actions/session-actions";
+import { useFileChangesDrawer } from "@/features/chat/contexts/file-changes-drawer-context";
 import type {
   ExecutionSession,
   StatePatch,
@@ -74,6 +75,7 @@ export function ChatPanel({
   const { t } = useT("translation");
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = React.useState(false);
+  const { openDrawer } = useFileChangesDrawer();
 
   // Message management hook
   const {
@@ -197,6 +199,23 @@ export function ChatPanel({
           t("chat.executionTitle")
         }
         description={t("chat.emptyStateDesc")}
+        action={
+          fileChanges && fileChanges.length > 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => openDrawer(fileChanges)}
+              className="gap-2"
+              title={t("fileChanges.title")}
+            >
+              <FolderGit2 className="h-4 w-4" />
+              <span className="text-xs">
+                {t("fileChanges.title")} ({fileChanges.length})
+              </span>
+            </Button>
+          ) : undefined
+        }
         onIconClick={onIconClick}
       />
 
@@ -212,7 +231,7 @@ export function ChatPanel({
       )}
 
       {/* Message list */}
-      <div className="flex-1 min-h-0 px-4">
+      <div className="flex-1 min-h-0 px-4 relative">
         {isLoadingHistory ? (
           <div className="flex h-full w-full items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/20" />

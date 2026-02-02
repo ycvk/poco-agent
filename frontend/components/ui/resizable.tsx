@@ -6,12 +6,24 @@ import * as ResizablePrimitive from "react-resizable-panels";
 
 import { cn } from "@/lib/utils";
 
-function ResizablePanelGroup({
-  className,
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) {
+type ResizablePanelGroupRef = React.ElementRef<
+  typeof ResizablePrimitive.PanelGroup
+>;
+type ResizablePanelGroupProps = React.ComponentPropsWithoutRef<
+  typeof ResizablePrimitive.PanelGroup
+>;
+type ResizablePanelRef = React.ElementRef<typeof ResizablePrimitive.Panel>;
+type ResizablePanelProps = React.ComponentPropsWithoutRef<
+  typeof ResizablePrimitive.Panel
+>;
+
+const ResizablePanelGroup = React.forwardRef<
+  ResizablePanelGroupRef,
+  ResizablePanelGroupProps
+>(({ className, ...props }, ref) => {
   return (
     <ResizablePrimitive.PanelGroup
+      ref={ref}
       data-slot="resizable-panel-group"
       className={cn(
         "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
@@ -20,13 +32,21 @@ function ResizablePanelGroup({
       {...props}
     />
   );
-}
+});
+ResizablePanelGroup.displayName = "ResizablePanelGroup";
 
-function ResizablePanel({
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.Panel>) {
-  return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />;
-}
+const ResizablePanel = React.forwardRef<ResizablePanelRef, ResizablePanelProps>(
+  ({ ...props }, ref) => {
+    return (
+      <ResizablePrimitive.Panel
+        ref={ref}
+        data-slot="resizable-panel"
+        {...props}
+      />
+    );
+  },
+);
+ResizablePanel.displayName = "ResizablePanel";
 
 function ResizableHandle({
   withHandle,
